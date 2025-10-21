@@ -60,30 +60,31 @@ const ChatInput: React.FC<ChatInputProps> = ({
       width: '100%', 
       display: 'flex', 
       flexDirection: 'column', 
-      gap: 12,
+      gap: 8,
       paddingTop: 8,
-      borderTop: '1px solid #e5e7eb'
     }}>
-      <div style={{ display: 'flex', gap: 12 }}>
+      <div style={{ display: 'flex', gap: 15 }}>
         <Button
-          icon={<PaperClipOutlined />}
+          icon={<PaperClipOutlined style={{ fontSize: 20 }}/>}
           onClick={handleFileUpload}
           disabled={isLoading}
           style={{
-            height: 44,
-            borderRadius: 12,
+            height: 60,
+            borderRadius: 20,
+            minWidth: 60,
             border: '1px solid #e5e7eb'
           }}
         />
 
         <Button
-          icon={<BulbOutlined />}
+          icon={<BulbOutlined style={{ fontSize: 20 }} />}
           onClick={handleSuggestIdeas}
           disabled={isLoading}
           title={suggestMode ? "Suggestions enabled - Click to disable" : "Click to enable AI suggestions"}
           style={{
-            height: 44,
-            borderRadius: 12,
+            height: 60,
+            borderRadius: 20,
+            minWidth: 60,
             border: suggestMode ? '2px solid #f59e0b' : '1px solid #e5e7eb',
             color: suggestMode? '#eb4f11ff' : '#f59e0b',
             backgroundColor: suggestMode ? '#fffbeb' : 'transparent',
@@ -114,9 +115,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
           disabled={!inputValue.trim() || isLoading}
           loading={isLoading}
           style={{ 
-            borderRadius: 12, 
-            height: 44,
-            minWidth: 44,
+            borderRadius: 20, 
+            height: 60,
+            minWidth: 60,
             background: inputValue.trim() ? '#0284c7' : undefined,
             borderColor: inputValue.trim() ? '#0284c7' : undefined
           }}

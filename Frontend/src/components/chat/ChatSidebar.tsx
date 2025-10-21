@@ -1,9 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Card, Button, Input, Typography, Empty, Tooltip, Avatar, Divider, Spin } from 'antd';
+import { Card, Button, Input, Typography, Empty, Avatar, Divider, Spin } from 'antd';
 import {
   PlusOutlined,
   SearchOutlined,
-  MenuFoldOutlined,
   LogoutOutlined,
   SettingOutlined,
   UserOutlined,
@@ -20,7 +19,6 @@ interface ChatSidebarProps {
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string) => void;
   onRenameConversation: (id: string, newTitle: string) => void;
-  onClose: () => void;
   onLogout: () => void;
   onOpenSettings: () => void;
   userName?: string;
@@ -37,7 +35,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSelectConversation,
   onDeleteConversation,
   onRenameConversation,
-  onClose,
   onLogout,
   onOpenSettings,
   userName,
@@ -130,28 +127,29 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       fontSize: 16,
     } as React.CSSProperties,
     newChatButton: {
-      borderRadius: 14,
-      height: 44,
+      borderRadius: 20,
+      height: 60,
       fontWeight: 600,
     } as React.CSSProperties,
     searchInput: {
-      borderRadius: 12,
+      borderRadius: 20,
+      height: 60,
     } as React.CSSProperties,
     list: {
       flex: 1,
       overflowY: 'auto',
       display: 'flex',
       flexDirection: 'column',
-      gap: 10,
-      paddingRight: 6,
+      gap: 15,
+      paddingRight: 10,
     } as React.CSSProperties,
     footer: {
       display: 'grid',
-      gap: 10,
+      gap: 20,
     } as React.CSSProperties,
     footerButton: {
-      borderRadius: 12,
-      height: 44,
+      borderRadius: 20,
+      height: 60,
     } as React.CSSProperties,
   };
 
@@ -179,14 +177,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             </Text>
           </div>
         </div>
-        <Tooltip title="Thu gọn">
-          <Button
-            type="text"
-            icon={<MenuFoldOutlined />}
-            onClick={onClose}
-            shape="circle"
-          />
-        </Tooltip>
       </div>
 
       <Button

@@ -29,7 +29,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       container: {
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 15,
         padding: isCompact ? 8 : '12px 14px',
         borderRadius: isCompact ? 10 : 14,
         cursor: 'pointer',
@@ -60,20 +60,22 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         display: isCompact ? 'none' : 'flex',
       } as React.CSSProperties,
       title: {
-        fontWeight: 600,
+        fontWeight: 750,
+        fontSize: 18,
         color: '#1f2937',
       } as React.CSSProperties,
       date: {
-        fontSize: 15,
+        fontSize: 16,
         color: '#64748b',
       } as React.CSSProperties,
       menuButton: {
+        fontSize: 20,
         borderRadius: 10,
-        color: '#94a3b8',
+        color: '#82abe3ff',
         display: isCompact ? 'none' : 'inline-flex',
       } as React.CSSProperties,
       renameInput: {
-        borderRadius: 8,
+        borderRadius: 10,
       } as React.CSSProperties,
     };
   }, [isActive, isCompact]);
@@ -101,6 +103,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       key: 'rename',
       label: 'Rename',
       icon: <EditOutlined />,
+      style: {
+        cursor: 'pointer',
+        fontSize: 16,
+      },
       onClick: () => setIsRenaming(true),
     },
     {
@@ -108,6 +114,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       label: 'Delete',
       icon: <DeleteOutlined />,
       danger: true,
+      style: {
+        cursor: 'pointer',
+        fontSize: 16,
+      },
       onClick: handleDelete,
     },
   ];
@@ -161,6 +171,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           menu={{ items: menuItems }}
           trigger={['click']}
           placement="bottomRight"
+          arrow
         >
           <Button
             type="text"
