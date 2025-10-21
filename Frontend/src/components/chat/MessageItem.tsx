@@ -126,7 +126,7 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry }) 
               animation: 'blink 1s infinite',
               fontSize: 18,
               color: '#0284c7'
-            }}>●</span>
+            }}>● AI is typing...</span>
           )}
           {/* ✅ Show error indicator in bubble for failed messages */}
           {msg.status === 'error' && msg.content.includes('⚠️') && (
