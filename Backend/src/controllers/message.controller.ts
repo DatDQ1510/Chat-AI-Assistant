@@ -129,3 +129,31 @@ export const handleReply = async (
     next(error);
   }
 };
+
+/**
+ * @desc Toggle important status for a message
+ */
+export const toggleImportant = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const messageId = req.params.messageId;
+    const { important } = req.body;
+    const userId = req.user?.id;
+    console.log("Toggling important status:", { messageId, important, userId });
+
+    const updatedMessage = await messageService.toggleImportant(messageId, important);
+
+    if (!updatedMessage) {
+      return res.status(404).json(errorResponse("Message not found"));
+    }
+
+    res
+      .status(200)
+      .json(successResponse(updatedMessage, "Message importance updated"));
+  } catch (error) {
+    next(error);
+  }
+};

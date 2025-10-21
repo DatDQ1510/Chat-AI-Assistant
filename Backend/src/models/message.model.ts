@@ -12,6 +12,7 @@ interface MessageAttributes {
   embedding?: number[] | null;
   createdAt?: Date;
   updatedAt?: Date;
+  important?: boolean; 
 }
 
 interface MessageCreationAttributes extends Optional<MessageAttributes, "id"> {}
@@ -29,6 +30,7 @@ export class Message
   public embedding!: number[] | null;
   public createdAt!: Date;
   public updatedAt!: Date;
+  public important!: boolean;
 }
 
 Message.init(
@@ -65,6 +67,11 @@ Message.init(
         return null;
       }
     },
+    important: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    }
   },  
   {
     sequelize,
@@ -74,6 +81,7 @@ Message.init(
   }
 );
 
+// index
 // Associations
 Message.belongsTo(User, { foreignKey: "user_id", as: "user" });
 User.hasMany(Message, { foreignKey: "user_id", as: "messages" });

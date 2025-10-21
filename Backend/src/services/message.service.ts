@@ -93,6 +93,13 @@ export class MessageService {
 
     return messageRepository.updateMessage(message_id, newContent, embedding || null);
   }
+
+  /**
+   * Toggle important status for a message
+   */
+  async toggleImportant(message_id: string, important: boolean) {
+    return messageRepository.toggleImportant(message_id, important);
+  }
   
   
 }

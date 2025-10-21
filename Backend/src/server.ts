@@ -5,6 +5,9 @@ import http from "http";
 import { createSocketServer } from "./sockets/socket.server";
 import { chatSocket } from "./sockets/chat.socket";
 import { authenticateSocket } from './middlewares/socketAuth.middleware';
+import './models/message.model';
+import './models/user.model';
+import './models/conversation.model';
 
 const startServer = async () => {
   try {
