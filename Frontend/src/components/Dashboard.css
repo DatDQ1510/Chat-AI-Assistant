@@ -1,0 +1,76 @@
+.ant-card {
+    border-radius: 50px !important;
+}
+.ant-card-body {
+    padding: 32px !important;
+}
+
+.dashboard-header {
+  background: #ffffff;
+  padding: 0 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dashboard-avatar {
+  background-color: #87d068;
+}
+.dashboard-username {
+  margin-left: 12px;
+  font-weight: 600;
+  font-size: 16px;
+}
+.dashboard-logout-btn {
+  border: none;
+  background: none;
+  color: #ff4d4f;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.dashboard-logout-btn:hover {
+  color: #ff7875;
+}
+.dashboard-content {
+  padding: 32px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 64px);
+}
+.dashboard-card {
+  border-radius: 20px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+.dashboard-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.dashboard-card-icon {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+.ant-btn-lg {
+  height: 48px;
+  font-size: 16px;
+  border-radius: 24px !important;
+}
+.dashboard-card-btn {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.25);
+  transition: all 0.3s ease;
+}
+.dashboard-card-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(79, 172, 254, 0.35);
+}

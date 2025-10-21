@@ -1,0 +1,167 @@
+/* ======= Tổng thể trang ======= */
+.signin-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, #eef4ff 0%, #f9fbff 100%);
+  font-family: 'Inter', sans-serif;
+}
+
+/* ======= Khối chính ======= */
+.signin-container {
+  background: #ffffff;
+  padding: 48px 40px;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(64, 150, 255, 0.08);
+  width: 380px;
+  text-align: center;
+  animation: fadeIn 0.6s ease;
+
+}
+
+/* ======= Tiêu đề ======= */
+.signin-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #1d1d1f;
+}
+
+.signin-subtitle {
+  color: #7d7d7d;
+  margin-bottom: 28px;
+  font-size: 15px;
+}
+
+/* ======= Form ======= */
+.signin-form {
+  text-align: left;
+}
+
+/* Label */
+.signin-form .ant-form-item-label > label {
+  font-weight: 600;
+  color: #333;
+}
+
+/* ======= Input & Password ======= */
+.signin-form .ant-input,
+.signin-form .ant-input-password {
+  border-radius: 12px !important;
+  height: 44px;
+  padding: 10px 14px;
+  font-size: 15px;
+  transition: all 0.25s ease;
+  background-color: #fafcff; /* nền nhẹ giúp border nổi hơn */
+}
+
+/* Hover nhẹ */
+.signin-form .ant-input:hover,
+.signin-form .ant-input-password:hover {
+  border-color: #c9d7ee;
+}
+
+/* Focus hiện đại — viền sáng lam gradient */
+.signin-form .ant-input:focus,
+.signin-form .ant-input-password:focus-within {
+  border-color: transparent !important;
+  background: linear-gradient(#fff, #fff) padding-box,
+              linear-gradient(135deg, #4facfe, #00f2fe) border-box;
+
+}
+
+/* Prefix icon */
+.signin-form .ant-input-prefix {
+  color: #9ba8c7;
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+/* ======= Meta row ======= */
+.signin-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+/* ======= Nút Sign In ======= */
+.signin-btn {
+  border-radius: 24px !important;
+  height: 46px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border: 1px solid transparent;
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.25);
+  transition: all 0.3s ease;
+  align-items: center;
+}
+
+.signin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(79, 172, 254, 0.35);
+}
+
+/* ======= Divider ======= */
+.signin-divider {
+  color: #a5a5a5;
+  font-size: 13px;
+  margin: 30px 0 20px;
+}
+
+/* ======= Nút Google ======= */
+.signin-google-btn {
+  border-radius: 25px !important;
+  height: 46px;
+  font-weight: 500;
+  border: 1px solid #e6eaf0;
+  background-color: #fff;
+  transition: all 0.3s ease;
+  color: #444;
+}
+
+.signin-google-btn:hover {
+  background-color: #f8faff;
+  border-color: #cfd9ec;
+  box-shadow: 0 3px 10px rgba(79, 172, 254, 0.1);
+}
+
+/* ======= Link ======= */
+.signin-link {
+  color: #4096ff;
+  transition: 0.3s;
+  font-weight: 500;
+}
+
+.signin-link:hover {
+  text-decoration: underline;
+}
+
+/* Link phụ */
+.signin-link.subtle {
+  color: #7a7a7a;
+  font-weight: 400;
+}
+
+/* Sign up line */
+.signin-switch {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 14px;
+}
+.ant-input-affix-wrapper {
+  border-radius: 20px !important;
+}
+/* Animation mượt khi mở */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
