@@ -16,7 +16,8 @@ export type TabSyncEvent =
   | { type: 'new_conversation'; payload: { conversation: AnyConversation } }
   | { type: 'delete_conversation'; payload: { conversationId: string } }
   | { type: 'rename_conversation'; payload: { conversationId: string; newTitle: string } }
-  | { type: 'streaming_status'; payload: { isStreaming: boolean; isWaitingForAI: boolean } };
+  | { type: 'streaming_status'; payload: { isStreaming: boolean; isWaitingForAI: boolean } }
+  | { type: 'toggle_important'; payload: { conversationId: string; messageId: string; important: boolean } };
 
 // ✅ Helper to broadcast events to other tabs
 export const broadcastToTabs = (event: TabSyncEvent) => {

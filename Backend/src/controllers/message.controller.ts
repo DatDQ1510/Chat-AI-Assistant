@@ -180,16 +180,20 @@ export const searchMessages = async (
   next: NextFunction
 ) => {
   try {
-    const { query, limit } = req.body;
+    const { query, limit, conversationId, relevanceThreshold } = req.body;
 
     const results = await messageService.searchByVectorEmbedding(
       query,
-      limit
+      limit || 5,
+      conversationId,
+      relevanceThreshold || 0.3
     );
+    
     console.log("Search results:", results);
+    
     res
       .status(200)
-      .json(successResponse(results, "Messages fetched successfully", ));
+      .json(successResponse(results, results.length > 0 ? "Messages found successfully" : "No matching messages found"));
   } catch (error) {
     next(error);
   }

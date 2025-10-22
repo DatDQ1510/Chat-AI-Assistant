@@ -7,6 +7,14 @@ import { socketManager } from "./socket.manager.js";
 import { retrySendMessage } from "./message.retry.js";
 import { addToFailedMessageQueue } from "../queues/message.queue.js";
 
+
+interface AttachedFile {
+  uid: string;
+  name: string;
+  type: string;
+  file: File;
+  preview?: string;
+}
 export const chatSocket = (io: Server) => {
   io.on("connection", (socket: Socket) => {
     const user_id = (socket as any).user?.id;
@@ -38,9 +46,10 @@ export const chatSocket = (io: Server) => {
         user_id?: string | null; 
         content: string;
         needs_suggestions?: boolean;
+        files?: AttachedFile[];
       }, callback?: (response: { success: boolean; error?: string; errorCode?: number }) => void) => {
-        const { conversation_id, content, needs_suggestions = false } = payload || {};
-        
+        const { conversation_id, content, needs_suggestions = false, files } = payload || {};
+
         try {
           // Validation
           if (!conversation_id || !content || !content.trim()) {

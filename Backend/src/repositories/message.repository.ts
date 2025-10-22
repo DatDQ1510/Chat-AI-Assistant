@@ -62,26 +62,62 @@ class MessageRepository {
   }
 
   /**
-   * Semantic Search theo vector embedding
+   * Semantic Search with conversation filtering and relevance threshold
+   * Two-step process:
+   * 1. Filter by conversation_id (if provided)
+   * 2. Apply vector search with distance threshold
+   * 3. Convert distance to relevance score (1 - normalized_distance)
    */
-  async searchByVector(queryEmbedding: any, limit: number) {
-    const vectorStr = `[${queryEmbedding.join(',')}]`; // ✅ convert mảng sang chuỗi vector hợp lệ
+  async searchByVector(
+    queryEmbedding: any, 
+    limit: number,
+    conversationId?: string,
+    relevanceThreshold: number = 0.3
+  ) {
+    const vectorStr = `[${queryEmbedding.join(',')}]`;
 
-    const results = await sequelize.query(
-      `
-      SELECT id, content, conversation_id, 
-            embedding <-> $1::vector AS distance
-      FROM messages
-      WHERE embedding IS NOT NULL
+    // Build query with optional conversation filter
+    let query = `
+      SELECT 
+        m.id, 
+        m.content, 
+        m.conversation_id,
+        m.sender_type as role,
+        m.created_at as timestamp,
+        (embedding <-> $1::vector) AS distance,
+        (1 - (embedding <-> $1::vector)) AS relevance_score
+      FROM messages m
+      WHERE m.embedding IS NOT NULL
+    `;
+
+    const params: any[] = [vectorStr];
+
+    // Add conversation filter if provided
+    if (conversationId) {
+      query += ` AND m.conversation_id = $${params.length + 1}`;
+      params.push(conversationId);
+    }
+
+    // Add relevance threshold filter (distance should be less than threshold)
+    // Note: Lower distance = higher similarity
+    // Convert relevance threshold (0.3 = 30% relevant) to distance (1 - 0.3 = 0.7 max distance)
+    const maxDistance = 1 - relevanceThreshold;
+    query += ` AND (embedding <-> $1::vector) < ${maxDistance}`;
+
+    // Order by distance (best matches first) and limit
+    query += `
       ORDER BY embedding <-> $1::vector ASC
-      LIMIT $2
-      `,
-      {
-        bind: [vectorStr, limit],
-        type: QueryTypes.SELECT,
-      }
-    );
-    console.log("Vector search results in repository:", results);
+      LIMIT $${params.length + 1}
+    `;
+    params.push(limit);
+
+    const results = await sequelize.query(query, {
+      bind: params,
+      type: QueryTypes.SELECT,
+    });
+
+    console.log(`Vector search results: ${results.length} messages found (threshold: ${relevanceThreshold})`);
+    
     return results;
   }
 
@@ -131,6 +167,7 @@ class MessageRepository {
     );
     return updatedMessage[1][0];
   }
+
   async getImportantMessages(conversationId: string) {
     return await Message.findAll({
       where: { conversation_id: conversationId, important: true }

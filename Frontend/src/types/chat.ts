@@ -8,6 +8,7 @@ export interface Message {
   status?: 'sending' | 'sent' | 'error'; // ✅ Message delivery status
   retryCount?: number; // Track retry attempts
   important?: boolean; // ✅ Mark message as important for semantic search
+  attachments?: string[]; // ✅ File URLs attached to this message
 }
 
 export interface Conversation {
@@ -26,8 +27,16 @@ export interface ChatState {
   isStreaming: boolean;
 }
 
+export interface AttachedFile {
+  uid: string;
+  name: string;
+  type: string;
+  file: File;
+  preview?: string;
+}
+
 export interface ChatInputProps {
-  onSendMessage: (message: string, needsSuggestions?: boolean) => void;
+  onSendMessage: (message: string, needsSuggestions?: boolean, files?: AttachedFile[]) => void;
   isLoading?: boolean;
   placeholder?: string;
 }

@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Typography, message, Spin } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import { Typography, message, Spin, Button, Space } from 'antd';
+import { LoadingOutlined, StarFilled } from '@ant-design/icons';
 import ChatSidebar from './ChatSidebar';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import SearchModal from './SearchModal';
+import ImportantDrawer from './ImportantDrawer';
+import SemanticChatDrawer from './SemanticChatDrawer';
 import type { Conversation, ChatState, Message } from '../../types/chat';
 import { useAuth } from '../../contexts/AuthContext';
 // import conversationService from '../../services/conversation.service'; // Now used by useConversations hook
@@ -18,6 +20,7 @@ import { useTabSync } from '../../hooks/useTabSync';
 import { useConversations } from '../../hooks/useConversations';
 import { useMessages } from '../../hooks/useMessages';
 import { useSendMessage } from '../../hooks/useSendMessage';
+import { broadcastToTabs } from '../../utils/tabSync';
 const { Title, Text } = Typography;
 
 const ChatContainer: React.FC = () => {
@@ -153,14 +156,35 @@ const ChatContainer: React.FC = () => {
 
   // ✅ Search modal state
   const [searchModalVisible, setSearchModalVisible] = useState(false);
+  const [importantDrawerVisible, setImportantDrawerVisible] = useState(false);
 
   const handleOpenSearch = useCallback(() => {
     setSearchModalVisible(true);
   }, []);
 
-
   const handleCloseSearch = useCallback(() => {
     setSearchModalVisible(false);
+  }, []);
+
+  const handleOpenImportant = useCallback(() => {
+    setImportantDrawerVisible(true);
+  }, []);
+
+  const handleCloseImportant = useCallback(() => {
+    setImportantDrawerVisible(false);
+  }, []);
+
+  // Scroll to specific message
+  const handleScrollToMessage = useCallback((messageId: string) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Highlight the message briefly
+      messageElement.style.backgroundColor = '#fff7e6';
+      setTimeout(() => {
+        messageElement.style.backgroundColor = '';
+      }, 2000);
+    }
   }, []);
 
   // ✅ Initial load: Load conversations on mount
@@ -205,6 +229,12 @@ const ChatContainer: React.FC = () => {
         m.id === messageId ? { ...m, important } : m
       ) || []
     }));
+
+    // Broadcast to other tabs
+    broadcastToTabs({
+      type: 'toggle_important',
+      payload: { conversationId, messageId, important }
+    });
 
     // Call API
     const result = await messageService.toggleImportant(messageId, important);
@@ -379,8 +409,36 @@ const ChatContainer: React.FC = () => {
                   'Start a new conversation'
                 )}
               </Text>
-              
             </div>
+            
+            {/* Action Buttons + Search Input */}
+            {chatState.currentConversationId && (
+              <Space size={12}>
+                <Button
+                  icon={<StarFilled />}
+                  onClick={handleOpenImportant}
+                  style={{
+                    borderRadius: 8,
+                    height: 36,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    color: '#faad14',
+                    borderColor: '#faad14',
+                  }}
+                >
+                  Important
+                </Button>
+                
+                {/* ✅ Semantic Search Input - Simple like sidebar search */}
+                <div style={{ width: 280 }}>
+                  <SemanticChatDrawer
+                    conversationId={chatState.currentConversationId}
+                    onMessageClick={handleScrollToMessage}
+                  />
+                </div>
+              </Space>
+            )}
           </div>
 
           <div style={styles.messages}>
@@ -411,6 +469,14 @@ const ChatContainer: React.FC = () => {
         visible={searchModalVisible}
         onClose={handleCloseSearch}
         currentUserId={userId}
+      />
+    
+      {/* Important Messages Drawer */}
+      <ImportantDrawer
+        visible={importantDrawerVisible}
+        onClose={handleCloseImportant}
+        conversationId={chatState.currentConversationId}
+        onMessageClick={handleScrollToMessage}
       />
     </div>
   );

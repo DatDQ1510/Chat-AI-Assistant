@@ -96,22 +96,35 @@ export class MessageService {
     return messageRepository.getImportantMessages(conversationId);
   }
 
+  /**
+   * Semantic search within a specific conversation
+   * Two-step process:
+   * 1. Fetch all messages from the conversation
+   * 2. Apply vector search only on those messages
+   * 3. Filter by relevance threshold
+   */
   async searchByVectorEmbedding(
     query: string,
-    limit: number = 3,
-
+    limit: number = 5,
+    conversationId?: string,
+    relevanceThreshold: number = 0.3 // Minimum relevance score (0-1 scale, lower distance = higher relevance)
   ) {
     console.log("Searching messages with vector embedding for query:", query);
-    // 1️⃣ Tạo embedding cho câu truy vấn
+    console.log("Conversation ID:", conversationId);
+    console.log("Relevance threshold:", relevanceThreshold);
+    
+    // 1️⃣ Create embedding for the query
     const queryEmbedding = await embeddingService.generateEmbedding(query);
 
-    // 2️⃣ Gọi repository để tìm kiếm
+    // 2️⃣ Call repository to search (with conversation filter if provided)
     const results = await messageRepository.searchByVector(
       queryEmbedding,
       limit,
+      conversationId,
+      relevanceThreshold
     );
 
-    // 3️⃣ Trả về kết quả
+    // 3️⃣ Return results (empty array if no matches above threshold)
     return results;
   }
 

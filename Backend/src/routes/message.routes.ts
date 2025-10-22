@@ -11,9 +11,10 @@ import {
 const router = Router();
 
 router.post("/", createMessage);
-router.get("/:conversation_id", getMessagesByConversation);
 router.post("/reply", handleReply);
-router.patch("/:messageId/important", toggleImportant);
-router.get("/:conversationId/important", getImportantMessages);
 router.post("/search", searchMessages);
+router.patch("/:messageId/important", toggleImportant);
+router.get("/important/:conversationId", getImportantMessages); // Move before generic /:conversation_id
+router.get("/:conversation_id", getMessagesByConversation);
+
 export default router;

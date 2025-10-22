@@ -19,6 +19,7 @@ type MessageDto = {
 	createdAt?: string;
 	updatedAt?: string;
 	important?: boolean; // ✅ Add important field
+	file_urls?: string[]; // ✅ Attached file URLs
 };
 
 type PaginatedMessagesDto = {
@@ -41,6 +42,7 @@ const mapMessage = (dto: MessageDto): Message => {
 		content: dto.content,
 		timestamp: new Date(dto.created_at || dto.createdAt || dto.updated_at || dto.updatedAt || new Date()), // ✅ Use created_at for sorting
 		important: dto.important || false, // ✅ Map important field
+		attachments: dto.file_urls && dto.file_urls.length > 0 ? dto.file_urls : undefined, // ✅ Map file URLs
 	};
 };
 
@@ -132,6 +134,7 @@ interface SearchResultDto {
 	content: string;
 	conversation_id: string;
 	distance?: number; // Distance from query (lower = more relevant)
+	relevance_score?: number; // Relevance score from backend (0-1, higher = more relevant)
 	sender_type?: 'user' | 'chatbot';
 	created_at?: string;
 	updated_at?: string;
@@ -152,6 +155,8 @@ interface SearchResultFrontend {
 const semanticSearch = async (
 	query: string,
 	limit = 5,
+	conversationId?: string,
+	relevanceThreshold = 0.3,
 ) => {
 	try {
 		const response = await axiosClient.post<ApiResponse<SearchResultDto[]>>(
@@ -159,6 +164,8 @@ const semanticSearch = async (
 			{
 				query,
 				limit,
+				conversationId,
+				relevanceThreshold,
 			}
 		);
 		
@@ -167,13 +174,13 @@ const semanticSearch = async (
 		// Backend returns: { success, message, data: [...] }
 		const rawResults = response.data.data || [];
 		
-		// Map to frontend format
+		// Map to frontend format with relevance_score from backend
 		const results: SearchResultFrontend[] = rawResults.map(result => ({
 			id: result.id,
 			content: result.content,
 			conversation_id: result.conversation_id,
 			conversation_title: undefined, // TODO: Get from conversations
-			relevance_score: result.distance ? (1 - Math.min(result.distance / 2, 1)) : undefined, // Convert distance to 0-1 score
+			relevance_score: result.relevance_score || (result.distance ? (1 - Math.min(result.distance / 2, 1)) : undefined),
 			role: result.sender_type === 'user' ? 'user' : 'assistant',
 			timestamp: new Date(result.created_at || result.updated_at || new Date()),
 			important: result.important || false,
@@ -204,10 +211,29 @@ const toggleImportant = async (messageId: string, important: boolean) => {
 	}
 };
 
+/**
+ * Get all important messages in a conversation
+ * @param conversationId - Conversation ID
+ */
+const getImportantMessages = async (conversationId: string): Promise<Message[]> => {
+	try {
+		const response = await axiosClient.get<ApiResponse<MessageDto[]>>(
+			`v1/api/messages/important/${conversationId}`
+		);
+		
+		const messages = response.data.data || [];
+		return messages.map(mapMessage);
+	} catch (error) {
+		console.error('Get important messages error:', error);
+		return [];
+	}
+};
+
 export default {
 	getMessagesByConversation,
 	createMessage,
 	getAIReply,
 	semanticSearch,
 	toggleImportant,
+	getImportantMessages,
 };

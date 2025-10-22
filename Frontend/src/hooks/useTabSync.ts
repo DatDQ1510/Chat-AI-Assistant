@@ -141,6 +141,15 @@ export const useTabSync = ({
           setIsWaitingForAI(payload.isWaitingForAI);
           break;
 
+        case 'toggle_important':
+          setMessagesMap(prev => ({
+            ...prev,
+            [payload.conversationId]: (prev[payload.conversationId] || []).map(m =>
+              m.id === payload.messageId ? { ...m, important: payload.important } : m
+            ),
+          }));
+          break;
+
         default:
           break;
       }

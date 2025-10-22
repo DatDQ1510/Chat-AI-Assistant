@@ -102,7 +102,7 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
   };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} id={`message-${msg.id}`}>
       <div style={styles.avatar}>
         {isUser ? (
           <UserOutlined />

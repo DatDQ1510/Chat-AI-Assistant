@@ -13,6 +13,7 @@ interface MessageAttributes {
   createdAt?: Date;
   updatedAt?: Date;
   important?: boolean; 
+  attachments?: object | null;
 }
 
 interface MessageCreationAttributes extends Optional<MessageAttributes, "id"> {}
@@ -31,6 +32,7 @@ export class Message
   public createdAt!: Date;
   public updatedAt!: Date;
   public important!: boolean;
+  public attachments!: object | null;
 }
 
 Message.init(
@@ -71,8 +73,12 @@ Message.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
-    }
-  },  
+    },
+    attachments: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
+  },
   {
     sequelize,
     tableName: "messages",
