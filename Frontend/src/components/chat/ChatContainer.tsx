@@ -5,10 +5,11 @@ import { LoadingOutlined } from '@ant-design/icons';
 import ChatSidebar from './ChatSidebar';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
+import SearchModal from './SearchModal';
 import type { Conversation, ChatState, Message } from '../../types/chat';
 import { useAuth } from '../../contexts/AuthContext';
 // import conversationService from '../../services/conversation.service'; // Now used by useConversations hook
-// import messageService from '../../services/message.service'; // Now used by useMessages hook
+import messageService from '../../services/message.service';
 import { useNavigate, useParams } from 'react-router-dom';
 import  {useSocket } from "../../contexts/SocketContext";
 // import { formatMessage } from "../../utils/chat" // Now used inside useSocketEvents hook
@@ -150,6 +151,18 @@ const ChatContainer: React.FC = () => {
     return chatState.conversations.find(c => c.id === chatState.currentConversationId) ?? null;
   }, [chatState.conversations, chatState.currentConversationId]);
 
+  // ✅ Search modal state
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
+
+  const handleOpenSearch = useCallback(() => {
+    setSearchModalVisible(true);
+  }, []);
+
+
+  const handleCloseSearch = useCallback(() => {
+    setSearchModalVisible(false);
+  }, []);
+
   // ✅ Initial load: Load conversations on mount
   useEffect(() => {
     if (!isAuthReady) return;
@@ -180,6 +193,35 @@ const ChatContainer: React.FC = () => {
 
     navigate('/signin', { replace: true });
   }, [logout, navigate]);
+
+  const handleToggleImportant = useCallback(async (messageId: string, important: boolean) => {
+    const conversationId = chatState.currentConversationId;
+    if (!conversationId) return;
+
+    // Optimistic update
+    setMessagesMap(prev => ({
+      ...prev,
+      [conversationId]: prev[conversationId]?.map(m => 
+        m.id === messageId ? { ...m, important } : m
+      ) || []
+    }));
+
+    // Call API
+    const result = await messageService.toggleImportant(messageId, important);
+    
+    if (result.success) {
+      message.success(important ? 'Marked as important' : 'Removed from important');
+    } else {
+      // Revert on error
+      setMessagesMap(prev => ({
+        ...prev,
+        [conversationId]: prev[conversationId]?.map(m => 
+          m.id === messageId ? { ...m, important: !important } : m
+        ) || []
+      }));
+      message.error('Failed to update message');
+    }
+  }, [chatState.currentConversationId]);
 
   // ✅ handleCopyMessage is now provided by useMessages hook (hookHandleCopyMessage)
 
@@ -297,9 +339,9 @@ const ChatContainer: React.FC = () => {
           onSelectConversation={handleSelectConversation}
           onDeleteConversation={handleDeleteConversation}
           onRenameConversation={handleRenameConversation}
-          onClose={() => {/* No-op */}}
           onLogout={handleLogout}
           onOpenSettings={handleOpenSettings}
+          onOpenSearch={handleOpenSearch}
           userName="Your workspace"
           userEmail="active session"
           onLoadMore={handleLoadMoreConversations}
@@ -337,6 +379,7 @@ const ChatContainer: React.FC = () => {
                   'Start a new conversation'
                 )}
               </Text>
+              
             </div>
           </div>
 
@@ -349,6 +392,7 @@ const ChatContainer: React.FC = () => {
               hasMore={chatState.currentConversationId ? finalMessagePagination[chatState.currentConversationId]?.hasMore : false}
               isLoadingMore={chatState.currentConversationId ? finalMessagePagination[chatState.currentConversationId]?.isLoading : false}
               onRetryMessage={handleRetryMessage}
+              onToggleImportant={handleToggleImportant}
             />
           </div>
 
@@ -361,6 +405,13 @@ const ChatContainer: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Search Modal */}
+      <SearchModal
+        visible={searchModalVisible}
+        onClose={handleCloseSearch}
+        currentUserId={userId}
+      />
     </div>
   );
 };

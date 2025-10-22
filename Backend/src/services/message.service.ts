@@ -83,16 +83,7 @@ export class MessageService {
       content
     );
   }
-  async updateMessageContent(message_id: string, newContent: string) {
-    let embedding = null;
-    try {
-      embedding = await embeddingService.generateEmbedding(newContent);
-    } catch (error) {
-      console.error("⚠️ Embedding failed, set null", error);
-    }
 
-    return messageRepository.updateMessage(message_id, newContent, embedding || null);
-  }
 
   /**
    * Toggle important status for a message
@@ -101,7 +92,29 @@ export class MessageService {
     return messageRepository.toggleImportant(message_id, important);
   }
   
-  
+  async getImportantMessages(conversationId: string) {
+    return messageRepository.getImportantMessages(conversationId);
+  }
+
+  async searchByVectorEmbedding(
+    query: string,
+    limit: number = 3,
+
+  ) {
+    console.log("Searching messages with vector embedding for query:", query);
+    // 1️⃣ Tạo embedding cho câu truy vấn
+    const queryEmbedding = await embeddingService.generateEmbedding(query);
+
+    // 2️⃣ Gọi repository để tìm kiếm
+    const results = await messageRepository.searchByVector(
+      queryEmbedding,
+      limit,
+    );
+
+    // 3️⃣ Trả về kết quả
+    return results;
+  }
+
 }
 
 export default new MessageService();

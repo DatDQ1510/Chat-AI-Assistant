@@ -61,7 +61,7 @@ Message.init(
       allowNull: false,
     },
     embedding: {
-      type: DataTypes.VIRTUAL, // ✅ TRICK: tránh Sequelize đụng cột VECTOR
+      type: "vector(1536)",
       allowNull: true,
       get() {
         return null;

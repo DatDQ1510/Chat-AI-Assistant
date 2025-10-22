@@ -7,6 +7,7 @@ export interface Message {
   isTemp?: boolean; // For optimistic updates before server confirmation
   status?: 'sending' | 'sent' | 'error'; // ✅ Message delivery status
   retryCount?: number; // Track retry attempts
+  important?: boolean; // ✅ Mark message as important for semantic search
 }
 
 export interface Conversation {
@@ -35,6 +36,7 @@ export interface MessageProps {
   message: Message;
   onCopy?: (content: string) => void;
   onRetry?: (messageId: string) => void; // ✅ Retry failed messages
+  onToggleImportant?: (messageId: string, important: boolean) => void; // ✅ Toggle important status
 }
 
 export interface ConversationItemProps {

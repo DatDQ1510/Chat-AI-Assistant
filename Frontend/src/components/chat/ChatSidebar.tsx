@@ -21,6 +21,7 @@ interface ChatSidebarProps {
   onRenameConversation: (id: string, newTitle: string) => void;
   onLogout: () => void;
   onOpenSettings: () => void;
+  onOpenSearch?: () => void; // ✅ Global semantic search
   userName?: string;
   userEmail?: string;
   onLoadMore?: () => void;
@@ -37,6 +38,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onRenameConversation,
   onLogout,
   onOpenSettings,
+  onOpenSearch,
   userName,
   userEmail,
   onLoadMore,
@@ -198,6 +200,22 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         style={styles.searchInput}
         size="large"
       />
+
+      {onOpenSearch && (
+        <Button
+          icon={<SearchOutlined />}
+          onClick={onOpenSearch}
+          block
+          style={{ 
+            ...styles.newChatButton, 
+            background: '#f3f4f6',
+            color: '#374151',
+            borderColor: '#e5e7eb'
+          }}
+        >
+          Search all messages
+        </Button>
+      )}
 
       <Divider style={{ margin: '0' }} />
 

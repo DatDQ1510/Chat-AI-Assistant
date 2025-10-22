@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { Button, Typography, Tooltip, Spin } from 'antd';
-import { CopyOutlined, UserOutlined, RobotOutlined, ReloadOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { CopyOutlined, UserOutlined, RobotOutlined, ReloadOutlined, CheckCircleOutlined, ExclamationCircleOutlined, StarOutlined, StarFilled } from '@ant-design/icons';
 import { message } from 'antd';
 import type { MessageProps } from '../../types/chat';
 
 const { Text } = Typography;
 
-const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry }) => {
+const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, onToggleImportant }) => {
   console.log("Rendering MessageItem:", msg);
   const isUser = msg.role === 'user';
 
@@ -58,16 +58,21 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry }) 
         color: '#9ca3af',
       } as React.CSSProperties,
       bubble: {
-        backgroundColor: isUser ? '#0284c7' : '#f3f4f6', // ✅ User xanh, AI xám
-        color: isUser ? '#ffffff' : '#1f2937',
+        backgroundColor: msg.important 
+          ? (isUser ? '#7c3aed' : '#fef3c7') // ✅ Important: User tím, AI vàng nhạt
+          : (isUser ? '#0284c7' : '#f3f4f6'), // ✅ Normal: User xanh, AI xám
+        color: msg.important
+          ? (isUser ? '#ffffff' : '#92400e') // ✅ Important: User trắng, AI vàng đậm
+          : (isUser ? '#ffffff' : '#1f2937'), // ✅ Normal: User trắng, AI đen
         borderRadius: 16,
         padding: '12px 16px',
         lineHeight: 1.6,
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-word',
         fontSize: 22,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+        boxShadow: msg.important ? '0 2px 8px rgba(124, 58, 237, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
         maxWidth: '100%',
+        border: msg.important ? '2px solid #a78bfa' : 'none',
       } as React.CSSProperties,
       actions: {
         display: 'flex',
@@ -76,7 +81,7 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry }) 
         gap: 8,
       } as React.CSSProperties,
     };
-  }, [isUser]);
+  }, [isUser, msg.important]);
   
   const handleCopy = async () => {
     try {
@@ -192,6 +197,20 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry }) 
               onClick={handleCopy}
               style={{ 
                 color: '#6b7280',
+                fontSize: 18
+              }}
+            />
+          </Tooltip>
+
+          {/* ✅ Important button for all messages */}
+          <Tooltip title={msg.important ? "Remove from important" : "Mark as important"}>
+            <Button
+              type="text"
+              size="small"
+              icon={msg.important ? <StarFilled /> : <StarOutlined />}
+              onClick={() => onToggleImportant?.(msg.id, !msg.important)}
+              style={{ 
+                color: msg.important ? '#f59e0b' : '#6b7280',
                 fontSize: 18
               }}
             />

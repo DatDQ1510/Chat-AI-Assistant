@@ -4,7 +4,7 @@ import {
   EllipsisOutlined, 
   DeleteOutlined, 
   EditOutlined,
-  MessageOutlined 
+  MessageOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import type { ConversationItemProps } from '../../types/chat';
@@ -139,7 +139,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       <div
         style={styles.content}
         onClick={() => onClick(conversation.id)}
-      >
+      > 
         <MessageOutlined style={styles.icon} />
 
         <div style={styles.info}>

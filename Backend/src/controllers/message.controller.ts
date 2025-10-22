@@ -157,3 +157,40 @@ export const toggleImportant = async (
     next(error);
   }
 };
+
+export const getImportantMessages = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const conversationId = req.params.conversationId; 
+    const importantMessages = await messageService.getImportantMessages(conversationId);
+
+    res
+      .status(200)
+      .json(successResponse(importantMessages, "Important messages fetched successfully"));
+  } catch (error) {
+    res.status(500).json(errorResponse("Server error while fetching important messages"));
+  }
+};
+
+export const searchMessages = async (
+  req: Request,
+  res: Response,  
+  next: NextFunction
+) => {
+  try {
+    const { query, limit } = req.body;
+
+    const results = await messageService.searchByVectorEmbedding(
+      query,
+      limit
+    );
+    console.log("Search results:", results);
+    res
+      .status(200)
+      .json(successResponse(results, "Messages fetched successfully", ));
+  } catch (error) {
+    next(error);
+  }
+};
