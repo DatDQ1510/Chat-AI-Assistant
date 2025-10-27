@@ -17,7 +17,8 @@ export type TabSyncEvent =
   | { type: 'delete_conversation'; payload: { conversationId: string } }
   | { type: 'rename_conversation'; payload: { conversationId: string; newTitle: string } }
   | { type: 'streaming_status'; payload: { isStreaming: boolean; isWaitingForAI: boolean } }
-  | { type: 'toggle_important'; payload: { conversationId: string; messageId: string; important: boolean } };
+  | { type: 'toggle_important'; payload: { conversationId: string; messageId: string; important: boolean } }
+  | { type: 'refresh_conversations'; payload: Record<string, never> }; // ✅ Simple refresh trigger
 
 // ✅ Helper to broadcast events to other tabs
 export const broadcastToTabs = (event: TabSyncEvent) => {
