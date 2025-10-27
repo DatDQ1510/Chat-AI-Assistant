@@ -18,6 +18,7 @@ export interface Conversation {
   createdAt: Date;
   updatedAt: Date;
   messages?: Message[];
+  project_id?: string | null; // ✅ Track which project this conversation belongs to
 }
 
 export interface ChatState {

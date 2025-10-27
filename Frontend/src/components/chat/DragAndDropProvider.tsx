@@ -7,7 +7,7 @@ import conversationService from '../../services/conversation.service';
 interface DragAndDropProviderProps {
   children: React.ReactNode;
   onConversationMoved?: (conversationId: string, projectId: string) => void;
-  onProjectUpdate?: (projectId: string) => Promise<void>; // ✅ New: Refresh project conversations
+  onProjectUpdate?: (projectId: string) => Promise<void>; 
 }
 
 const DragAndDropProvider: React.FC<DragAndDropProviderProps> = ({ 

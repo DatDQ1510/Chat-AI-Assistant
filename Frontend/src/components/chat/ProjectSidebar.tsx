@@ -20,6 +20,7 @@ interface ProjectSidebarProps {
 // ✅ Export imperative handle type
 export interface ProjectSidebarRef {
   refreshProject: (projectId: string) => Promise<void>;
+  refreshAllProjects: () => Promise<void>; // ✅ Add new method
 }
 
 const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
@@ -41,21 +42,28 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
     updateProject,
     toggleProject,
     fetchProjectConversations, // ✅ Get refresh function
+    refreshAllExpandedProjects, // ✅ Get refresh all function
   } = useProjects();
 
   // ✅ Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     refreshProject: async (projectId: string) => {
+      console.log('🔄 ProjectSidebar.refreshProject called for:', projectId);
       await fetchProjectConversations(projectId);
     },
-  }), [fetchProjectConversations]);
+    refreshAllProjects: async () => {
+      console.log('🔄 ProjectSidebar.refreshAllProjects called');
+      await refreshAllExpandedProjects();
+    },
+  }), [fetchProjectConversations, refreshAllExpandedProjects]);
 
   // Load projects on mount
   useEffect(() => {
     if (isExpanded && projects.length === 0 && !loading) {
       fetchProjects();
     }
-  }, [isExpanded, projects.length, loading, fetchProjects]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isExpanded]);
 
   const handleToggleSidebar = () => {
     setIsExpanded(!isExpanded);

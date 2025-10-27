@@ -14,6 +14,7 @@ interface UseProjectsReturn {
   updateProject: (projectId: string, name: string, description?: string) => Promise<void>;
   toggleProject: (projectId: string) => Promise<void>;
   fetchProjectConversations: (projectId: string) => Promise<Conversation[]>;
+  refreshAllExpandedProjects: () => Promise<void>; // ✅ New method to refresh all
 }
 
 export const useProjects = (): UseProjectsReturn => {
@@ -96,9 +97,11 @@ export const useProjects = (): UseProjectsReturn => {
    * Fetch conversations for a project
    */
   const fetchProjectConversations = useCallback(async (projectId: string): Promise<Conversation[]> => {
+    console.log(`📂 Fetching conversations for project ${projectId}...`);
     setLoadingConversations((prev) => new Set(prev).add(projectId));
     try {
       const conversations = await projectService.getConversationsByProjectId(projectId);
+      console.log(`✅ Fetched ${conversations.length} conversations for project ${projectId}`);
       
       // Update project with conversations
       setProjects((prev) =>
@@ -143,6 +146,21 @@ export const useProjects = (): UseProjectsReturn => {
     }
   }, [expandedProjects, projects, fetchProjectConversations]);
 
+  /**
+   * Refresh all expanded projects - Call API to get latest data
+   */
+  const refreshAllExpandedProjects = useCallback(async () => {
+    console.log('🔄 Refreshing all expanded projects...', Array.from(expandedProjects));
+    
+    // Refresh each expanded project
+    const refreshPromises = Array.from(expandedProjects).map(projectId => 
+      fetchProjectConversations(projectId)
+    );
+    
+    await Promise.all(refreshPromises);
+    console.log('✅ All expanded projects refreshed');
+  }, [expandedProjects, fetchProjectConversations]);
+
   return {
     projects,
     loading,
@@ -154,5 +172,6 @@ export const useProjects = (): UseProjectsReturn => {
     updateProject,
     toggleProject,
     fetchProjectConversations,
+    refreshAllExpandedProjects, // ✅ Export new method
   };
 };

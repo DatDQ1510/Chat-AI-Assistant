@@ -87,6 +87,7 @@ const ChatContainer: React.FC = () => {
     messages: [], // Always empty - messages stored in messagesMap
     createdAt: conv.createdAt ? new Date(conv.createdAt) : new Date(),
     updatedAt: conv.updatedAt ? new Date(conv.updatedAt) : new Date(),
+    project_id: conv.project_id ?? null, // ✅ Include project_id
   }), []);
 
   // Get loadConversations from hook first
@@ -456,6 +457,34 @@ const ChatContainer: React.FC = () => {
     }
   }, []);
 
+  // ✅ Enhanced delete handler - Refresh all projects after deletion
+  const handleDeleteWithProjectRefresh = useCallback(async (id: string) => {
+    console.log(`🗑️ Deleting conversation ${id}`);
+
+    // Delete conversation
+    await handleDeleteConversation(id);
+
+    // Refresh all expanded projects to sync
+    console.log('🔄 Refreshing all projects after deletion...');
+    if (chatSidebarRef.current) {
+      await chatSidebarRef.current.refreshAllProjects();
+    }
+  }, [handleDeleteConversation]);
+
+  // ✅ Enhanced rename handler - Refresh all projects after rename
+  const handleRenameWithProjectRefresh = useCallback(async (id: string, newTitle: string) => {
+    console.log(`✏️ Renaming conversation ${id} to "${newTitle}"`);
+
+    // Rename conversation
+    await handleRenameConversation(id, newTitle);
+
+    // Refresh all expanded projects to sync
+    console.log('🔄 Refreshing all projects after rename...');
+    if (chatSidebarRef.current) {
+      await chatSidebarRef.current.refreshAllProjects();
+    }
+  }, [handleRenameConversation]);
+
   return (
     <DragAndDropProvider 
       onConversationMoved={handleConversationMoved}
@@ -470,8 +499,8 @@ const ChatContainer: React.FC = () => {
           currentConversationId={chatState.currentConversationId}
           onNewConversation={handleNewConversation}
           onSelectConversation={handleSelectConversation}
-          onDeleteConversation={handleDeleteConversation}
-          onRenameConversation={handleRenameConversation}
+          onDeleteConversation={handleDeleteWithProjectRefresh}
+          onRenameConversation={handleRenameWithProjectRefresh}
           onLogout={handleLogout}
           onOpenSettings={handleOpenSettings}
           onOpenSearch={handleOpenSearch}

@@ -16,7 +16,7 @@ class ConversationRepository {
             order: [["updatedAt", "DESC"]], // ✅ Order by most recent first
             limit,
             offset,
-            attributes: ["conversation_name", "id", "createdAt", "updatedAt", "user_id"],
+            attributes: ["conversation_name", "id", "createdAt", "updatedAt", "user_id", "project_id"], // ✅ Include project_id
         });
     }
 

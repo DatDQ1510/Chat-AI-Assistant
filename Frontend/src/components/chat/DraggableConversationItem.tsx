@@ -12,7 +12,7 @@ interface DraggableConversationItemProps {
   onRename?: (id: string, newTitle: string) => void;
 }
 
-const DRAG_THRESHOLD = 10; // pixels to move before activating drag
+const DRAG_THRESHOLD = 10;
 
 const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
   conversation,
@@ -31,17 +31,15 @@ const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
       type: 'conversation',
       conversation,
     },
-    disabled: !isDragActive, // ✅ Only enable when user moves enough
+    disabled: !isDragActive,
   });
 
-  // ✅ Track mouse down position
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
     hasMovedRef.current = false;
     setIsDragActive(false);
   }, []);
 
-  // ✅ Handle mouse move - Enable drag if moved enough
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!mouseDownPosRef.current || hasMovedRef.current) return;
 
@@ -49,7 +47,6 @@ const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
     const deltaY = Math.abs(e.clientY - mouseDownPosRef.current.y);
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    // If moved more than threshold, activate drag mode
     if (distance > DRAG_THRESHOLD) {
       hasMovedRef.current = true;
       setIsDragActive(true);
@@ -57,14 +54,12 @@ const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
     }
   }, [conversation.title]);
 
-  // ✅ Handle mouse up - Reset drag mode
   const handleMouseUp = useCallback(() => {
     setIsDragActive(false);
     mouseDownPosRef.current = null;
     hasMovedRef.current = false;
   }, []);
 
-  // ✅ Handle click - Only fire if didn't drag
   const handleClick = useCallback(() => {
     if (!hasMovedRef.current && !isDragging) {
       onClick(conversation.id);
@@ -87,12 +82,12 @@ const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onClick={handleClick}
-      {...(isDragActive ? { ...attributes, ...listeners } : {})} // ✅ Only attach when drag active
+      {...(isDragActive ? { ...attributes, ...listeners } : {})} 
     >
       <ConversationItem
         conversation={conversation}
         isActive={isActive}
-        onClick={() => {}} // ✅ Disable inner onClick, use outer wrapper
+        onClick={() => {}}
         onDelete={onDelete}
         onRename={onRename}
       />

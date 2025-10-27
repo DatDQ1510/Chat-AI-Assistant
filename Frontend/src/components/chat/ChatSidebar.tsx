@@ -34,6 +34,7 @@ interface ChatSidebarProps {
 // ✅ Export ref type
 export interface ChatSidebarRef {
   refreshProject: (projectId: string) => Promise<void>;
+  refreshAllProjects: () => Promise<void>; // ✅ Add new method
 }
 
 const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
@@ -61,6 +62,12 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
     refreshProject: async (projectId: string) => {
       if (projectSidebarRef.current) {
         await projectSidebarRef.current.refreshProject(projectId);
+      }
+    },
+    refreshAllProjects: async () => {
+      console.log('🔄 ChatSidebar.refreshAllProjects called');
+      if (projectSidebarRef.current) {
+        await projectSidebarRef.current.refreshAllProjects();
       }
     },
   }), []);
