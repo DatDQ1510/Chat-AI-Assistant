@@ -23,7 +23,7 @@ import { useConversations } from '../../hooks/useConversations';
 import { useMessages } from '../../hooks/useMessages';
 import { useSendMessage } from '../../hooks/useSendMessage';
 import { broadcastToTabs } from '../../utils/tabSync';
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const ChatContainer: React.FC = () => {
   const { chatId } = useParams<{ chatId?: string }>(); // Get conversation ID from URL
@@ -391,7 +391,6 @@ const ChatContainer: React.FC = () => {
       marginBottom: 0,
       padding: '16px 24px',
       display: 'flex',
-      justifyContent: 'space-between',
       alignItems: 'center',
       gap: 12,
       borderBottom: '1px solid #e5e7eb',
@@ -399,13 +398,11 @@ const ChatContainer: React.FC = () => {
     } as React.CSSProperties,
     headerInfo: {
       display: 'flex',
-      flexDirection: 'column',
-      gap: 4,
-      flex: 1,
+      marginLeft: '20px',
     } as React.CSSProperties,
     headerTitle: {
       margin: 0,
-      color: '#1f2937',
+      color: '#9d740cff',
     } as React.CSSProperties,
     headerSubtitle: {
       color: '#6b7280',
@@ -480,38 +477,12 @@ const ChatContainer: React.FC = () => {
               <Title level={4} style={styles.headerTitle}>
                 {currentTitle}
               </Title>
-              {/* <Text style={styles.headerSubtitle}>
-                {chatState.isStreaming ? (
-                  <span>
-                    <LoadingOutlined style={{ marginRight: 8 }} />
-                    AI is typing…
-                  </span>
-                ) : hasMessages ? (
-                  `${currentMessages.length} messages`
-                ) : (
-                  'Start a new conversation'
-                )}
-              </Text> */}
             </div>
             
             {/* Action Buttons + Search Input */}
             {chatState.currentConversationId && (
-              <Space size={12}>
-                <Button
-                  icon={<StarFilled />}
-                  onClick={handleOpenImportant}
-                  style={{
-                    borderRadius: 8,
-                    height: 36,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    color: '#faad14',
-                    borderColor: '#faad14',
-                  }}
-                >
-                  Important
-                </Button>
+              <Space size={16} style={{ marginLeft: '50px' }}>
+                
                 
                 {/* ✅ Semantic Search Input - Simple like sidebar search */}
                 <div style={{ width: 280 }}>
@@ -522,6 +493,23 @@ const ChatContainer: React.FC = () => {
                 </div>
               </Space>
             )}
+            <Button
+              icon={<StarFilled />}
+              onClick={handleOpenImportant}
+              style={{
+                borderRadius: 8,
+                height: 36,
+                marginLeft: 'auto',
+                marginRight: '50px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                color: '#faad14',
+                borderColor: '#faad14',
+              }}
+            >
+              Important
+            </Button>
           </div>
 
           <div style={styles.messages}>

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { Button, Typography, Tooltip, Spin } from 'antd';
-import { CopyOutlined, UserOutlined, RobotOutlined, ReloadOutlined, CheckCircleOutlined, ExclamationCircleOutlined, StarOutlined, StarFilled } from '@ant-design/icons';
+import { Button, Typography, Tooltip, Spin, Image, Space } from 'antd';
+import { CopyOutlined, UserOutlined, RobotOutlined, ReloadOutlined, CheckCircleOutlined, ExclamationCircleOutlined, StarOutlined, StarFilled, FileOutlined, FilePdfOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import type { MessageProps } from '../../types/chat';
 
@@ -9,6 +9,22 @@ const { Text } = Typography;
 const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, onToggleImportant }) => {
   console.log("Rendering MessageItem:", msg);
   const isUser = msg.role === 'user';
+
+  // Helper to determine file type from URL
+  const getFileType = (url: string): string => {
+    const ext = url.split('.').pop()?.toLowerCase() || '';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
+    if (['mp4', 'webm', 'ogg'].includes(ext)) return 'video';
+    if (ext === 'pdf') return 'pdf';
+    return 'other';
+  };
+
+  const getFileIcon = (url: string) => {
+    const type = getFileType(url);
+    if (type === 'pdf') return <FilePdfOutlined style={{ fontSize: 24, color: '#ef4444' }} />;
+    if (type === 'video') return <PlayCircleOutlined style={{ fontSize: 24, color: '#3b82f6' }} />;
+    return <FileOutlined style={{ fontSize: 24, color: '#6b7280' }} />;
+  };
 
   const styles = useMemo(() => {
     return {
@@ -122,9 +138,71 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
         </div>
         
         <div style={styles.bubble}>
-          <Text style={{ color: isUser ? '#ffffff' : '#1f2937' }}>
-            {msg.content}
-          </Text>
+          {/* ✅ Attachments - Images first */}
+          {msg.attachments && msg.attachments.length > 0 && (
+            <div style={{ marginBottom: msg.content ? 12 : 0 }}>
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                {msg.attachments.map((url, index) => {
+                  const fileType = getFileType(url);
+                  
+                  if (fileType === 'image') {
+                    return (
+                      <Image
+                        key={index}
+                        src={url}
+                        alt={`Attachment ${index + 1}`}
+                        style={{ 
+                          borderRadius: 8, 
+                          maxWidth: '100%',
+                          maxHeight: 300,
+                          objectFit: 'cover'
+                        }}
+                        preview={{
+                          mask: '🔍 View full size'
+                        }}
+                      />
+                    );
+                  } else {
+                    // PDF, video, or other files - show as download link
+                    return (
+                      <a
+                        key={index}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '8px 12px',
+                          background: isUser ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.05)',
+                          borderRadius: 8,
+                          textDecoration: 'none',
+                          color: 'inherit',
+                        }}
+                      >
+                        {getFileIcon(url)}
+                        <Text style={{ 
+                          color: isUser ? '#ffffff' : '#1f2937',
+                          fontSize: 14
+                        }}>
+                          {fileType === 'pdf' ? '📄 PDF Document' : fileType === 'video' ? '🎥 Video File' : '📎 File'}
+                        </Text>
+                      </a>
+                    );
+                  }
+                })}
+              </Space>
+            </div>
+          )}
+
+          {/* Message content */}
+          {msg.content && (
+            <Text style={{ color: isUser ? '#ffffff' : '#1f2937' }}>
+              {msg.content}
+            </Text>
+          )}
+          
           {msg.isStreaming && (
             <span style={{ 
               marginLeft: 6, 

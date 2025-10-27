@@ -186,7 +186,7 @@ export const searchMessages = async (
       query,
       limit || 5,
       conversationId,
-      relevanceThreshold || 0.3
+      relevanceThreshold || 0.5
     );
     
     console.log("Search results:", results);

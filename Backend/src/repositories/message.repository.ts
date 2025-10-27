@@ -5,7 +5,7 @@ import { Message } from "../models/message.model.js";
 
 class MessageRepository {
   /**
-   * Tạo message với embedding vector (::vector)
+   * Tạo message với embedding vector (::vector) và file attachments
    */
   async createMessage(
     conversation_id: string,
@@ -13,13 +13,19 @@ class MessageRepository {
     user_id: string | null,
     chatbot_id: string | null,
     content: string,
-    embedding: number[] | null
+    embedding: number[] | null,
+    file_urls?: string[] // ✅ Add file_urls parameter
   ) {
     const formattedEmbedding = embedding ? `[${embedding.join(',')}]` : null;
+    
+    // ✅ Format attachments as JSONB
+    const attachments = file_urls && file_urls.length > 0 
+      ? JSON.stringify(file_urls) 
+      : null;
 
     const query = `
-      INSERT INTO messages (conversation_id, sender_type, user_id, chatbot_id, content, embedding, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6::vector, NOW(), NOW())
+      INSERT INTO messages (conversation_id, sender_type, user_id, chatbot_id, content, embedding, attachments, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6::vector, $7::jsonb, NOW(), NOW())
       RETURNING *
     `;
 
@@ -29,7 +35,8 @@ class MessageRepository {
       user_id,
       chatbot_id,
       content,
-      formattedEmbedding
+      formattedEmbedding,
+      attachments // ✅ Add attachments to values
     ];
 
     const [result] = await sequelize.query(query, { bind: values });
@@ -43,12 +50,12 @@ class MessageRepository {
   async getMessagesByConversationId(conversation_id: string, limit: number, offset: number) {
     const dataMessages = await Message.findAll({
       where: { conversation_id: conversation_id },
-      order: [["createdAt", "ASC"]], // ✅ Changed to ASC for correct chat order (oldest first)
+      order: [["createdAt", "DESC"]], // ✅ DESC to get newest first, then reverse in service
       limit: limit,
       offset: offset,
-      attributes: ["id", "sender_type", "content", "createdAt", "updatedAt", "important"],
+      attributes: ["id", "sender_type", "content", "createdAt", "updatedAt", "important", "attachments"], // ✅ Add attachments
     });
-    return dataMessages;
+    return dataMessages.reverse(); // ✅ Reverse to show oldest first in UI
   }
 
   /**
@@ -72,7 +79,7 @@ class MessageRepository {
     queryEmbedding: any, 
     limit: number,
     conversationId?: string,
-    relevanceThreshold: number = 0.3
+    relevanceThreshold: number = 0.5
   ) {
     const vectorStr = `[${queryEmbedding.join(',')}]`;
 

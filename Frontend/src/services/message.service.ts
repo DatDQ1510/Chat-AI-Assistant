@@ -156,7 +156,7 @@ const semanticSearch = async (
 	query: string,
 	limit = 5,
 	conversationId?: string,
-	relevanceThreshold = 0.3,
+	relevanceThreshold = 0.7,
 ) => {
 	try {
 		const response = await axiosClient.post<ApiResponse<SearchResultDto[]>>(
