@@ -1,18 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Typography, message, Spin, Button, Space } from 'antd';
 import { LoadingOutlined, StarFilled } from '@ant-design/icons';
 import ChatSidebar from './ChatSidebar';
 import MessageList from './MessageList';
-import ChatInput from './ChatInput';
+import ChatInput from './ChatInput'; // ✅ Import component
+import type { ChatInputRef } from './ChatInput'; // ✅ Import ref type
 import SearchModal from './SearchModal';
 import ImportantDrawer from './ImportantDrawer';
 import SemanticChatDrawer from './SemanticChatDrawer';
+import SelectionPopover from './SelectionPopover'; // ✅ New component
 import type { Conversation, ChatState, Message } from '../../types/chat';
 import { useAuth } from '../../contexts/AuthContext';
 // import conversationService from '../../services/conversation.service'; // Now used by useConversations hook
 import messageService from '../../services/message.service';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import  {useSocket } from "../../contexts/SocketContext";
 // import { formatMessage } from "../../utils/chat" // Now used inside useSocketEvents hook
 import { useSocketEvents } from '../../hooks/useSocketEvents';
@@ -25,6 +27,10 @@ const { Title, Text } = Typography;
 
 const ChatContainer: React.FC = () => {
   const { chatId } = useParams<{ chatId?: string }>(); // Get conversation ID from URL
+  const location = useLocation();
+  
+  // ✅ Create ref để control ChatInput
+  const chatInputRef = useRef<ChatInputRef>(null);
   
   const [chatState, setChatState] = useState<ChatState>({
     conversations: [],
@@ -80,21 +86,7 @@ const ChatContainer: React.FC = () => {
     updatedAt: conv.updatedAt ? new Date(conv.updatedAt) : new Date(),
   }), []);
 
-  // ✅ Custom hooks replace all the old logic above
-  useSocketEvents({
-    socket,
-    currentConversationId: chatState.currentConversationId,
-    setMessagesMap,
-    setChatState,
-    setIsWaitingForAI,
-  });
-
-  useTabSync({
-    setMessagesMap,
-    setChatState,
-    setIsWaitingForAI,
-  });
-
+  // Get loadConversations from hook first
   const {
     conversationPagination: hookConversationPagination,
     operationLoading: hookOperationLoading,
@@ -109,6 +101,28 @@ const ChatContainer: React.FC = () => {
     setChatState,
     userId,
     normalizeConversation,
+  });
+
+  // ✅ Helper: Reload conversations to get updated order
+  const refreshConversationOrder = useCallback(() => {
+    console.log('🔄 Refreshing conversation order...');
+    loadConversations({ page: 1, append: false, manageLoading: false });
+  }, [loadConversations]);
+
+  // ✅ Custom hooks replace all the old logic above
+  useSocketEvents({
+    socket,
+    currentConversationId: chatState.currentConversationId,
+    setMessagesMap,
+    setChatState,
+    setIsWaitingForAI,
+    refreshConversationOrder, // ✅ Pass refresh callback
+  });
+
+  useTabSync({
+    setMessagesMap,
+    setChatState,
+    setIsWaitingForAI,
   });
 
   const {
@@ -175,7 +189,43 @@ const ChatContainer: React.FC = () => {
   }, []);
 
   // Scroll to specific message
-  const handleScrollToMessage = useCallback((messageId: string) => {
+  // ✅ Smart scroll: Load messages if needed, then scroll
+  const handleScrollToMessage = useCallback(async (messageId: string) => {
+    if (!chatState.currentConversationId) return;
+
+    const conversationId = chatState.currentConversationId;
+    const currentMessages = messagesMap[conversationId] || [];
+    
+    // Check if message exists in current loaded messages
+    const messageExists = currentMessages.some(m => m.id === messageId);
+    
+    if (!messageExists) {
+      // ✅ Message not loaded yet - need to fetch all messages up to this one
+      try {
+        message.loading('Loading message...', 0.5);
+        
+        // Fetch all messages for this conversation (large limit to get all)
+        const response = await messageService.getMessagesByConversation(conversationId, {
+          page: 1,
+          limit: 1000, // Large limit to ensure we get all messages
+        });
+        
+        // Update messages map with all messages
+        setMessagesMap(prev => ({
+          ...prev,
+          [conversationId]: response.messages,
+        }));
+        
+        // Wait for DOM update
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error('Failed to load messages:', error);
+        message.error('Failed to load message');
+        return;
+      }
+    }
+    
+    // Now scroll to the message
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -184,8 +234,28 @@ const ChatContainer: React.FC = () => {
       setTimeout(() => {
         messageElement.style.backgroundColor = '';
       }, 2000);
+    } else {
+      message.warning('Message not found');
     }
-  }, []);
+  }, [chatState.currentConversationId, messagesMap, setMessagesMap]);
+
+  // ✅ Handle text selection → Fill input và focus
+  const handleAskAIAboutSelection = useCallback((selectedText: string) => {
+    if (!chatState.currentConversationId) {
+      message.warning('Please select a conversation first');
+      return;
+    }
+
+    // ✅ Điền text vào input
+    chatInputRef.current?.setInputValue(selectedText);
+    
+    // ✅ Focus vào input sau 100ms để đảm bảo text đã được set
+    setTimeout(() => {
+      chatInputRef.current?.focusInput();
+    }, 100);
+    
+    message.success('Text filled in input - You can edit before sending');
+  }, [chatState.currentConversationId]);
 
   // ✅ Initial load: Load conversations on mount
   useEffect(() => {
@@ -199,6 +269,21 @@ const ChatContainer: React.FC = () => {
 
     return () => abortController.abort();
   }, [isAuthReady, chatId, loadConversations]);
+
+  // ✅ Handle scroll to message from search/navigation
+  useEffect(() => {
+    const state = location.state as { scrollToMessageId?: string; highlightMessageId?: string } | undefined;
+    if (state?.scrollToMessageId && chatState.currentConversationId) {
+      // Wait for messages to load, then scroll
+      const timer = setTimeout(() => {
+        handleScrollToMessage(state.scrollToMessageId!);
+        // Clear the state to prevent re-scrolling
+        window.history.replaceState({}, document.title);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.state, chatState.currentConversationId, handleScrollToMessage]);
 
   const handleOpenSettings = useCallback(() => {
     navigate('/settings');
@@ -267,8 +352,6 @@ const ChatContainer: React.FC = () => {
     return messages;
   }, [chatState.currentConversationId, finalMessagesMap]);
   
-  const hasMessages = useMemo(() => currentMessages.length > 0, [currentMessages]);
-
   const styles = useMemo(() => ({
     page: {
       minHeight: '100vh',
@@ -397,7 +480,7 @@ const ChatContainer: React.FC = () => {
               <Title level={4} style={styles.headerTitle}>
                 {currentTitle}
               </Title>
-              <Text style={styles.headerSubtitle}>
+              {/* <Text style={styles.headerSubtitle}>
                 {chatState.isStreaming ? (
                   <span>
                     <LoadingOutlined style={{ marginRight: 8 }} />
@@ -408,7 +491,7 @@ const ChatContainer: React.FC = () => {
                 ) : (
                   'Start a new conversation'
                 )}
-              </Text>
+              </Text> */}
             </div>
             
             {/* Action Buttons + Search Input */}
@@ -456,6 +539,7 @@ const ChatContainer: React.FC = () => {
 
           <div style={styles.inputContainer}>
             <ChatInput
+              ref={chatInputRef}
               onSendMessage={handleSendMessage}
               isLoading={!!finalOperationLoading.type}
               placeholder="Type your message..."
@@ -478,6 +562,9 @@ const ChatContainer: React.FC = () => {
         conversationId={chatState.currentConversationId}
         onMessageClick={handleScrollToMessage}
       />
+
+      {/* ✅ Text Selection Popover - Ask AI about selected text */}
+      <SelectionPopover onAskAI={handleAskAIAboutSelection} />
     </div>
   );
 };
