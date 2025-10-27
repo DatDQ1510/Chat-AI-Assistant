@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Modal, Input, List, Tag, Empty, Spin, Radio, Space, Typography } from 'antd';
+import { Modal, Input, List, Tag, Empty, Spin, Typography } from 'antd';
 import type { InputRef } from 'antd';
-import { SearchOutlined, MessageOutlined, ClockCircleOutlined, StarFilled } from '@ant-design/icons';
+import { SearchOutlined, ClockCircleOutlined, StarFilled } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import messageService from '../../services/message.service';
 
@@ -33,7 +33,6 @@ const SearchModal: React.FC<SearchModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchMode, setSearchMode] = useState<'all' | 'important'>('all');
   const inputRef = useRef<InputRef>(null);
   const navigate = useNavigate();
 
@@ -47,7 +46,6 @@ const SearchModal: React.FC<SearchModalProps> = ({
       // Reset state when modal closes
       setSearchQuery('');
       setSearchResults([]);
-      setSearchMode('all');
     }
   }, [visible]);
 
@@ -62,20 +60,14 @@ const SearchModal: React.FC<SearchModalProps> = ({
       const response = await messageService.semanticSearch(searchQuery, 20);
       console.log('Semantic search response:', response);
       
-      // Filter by important flag if needed
-      let results = response.results || [];
-      if (searchMode === 'important') {
-        results = results.filter(r => r.important);
-      }
-      
-      setSearchResults(results);
+      setSearchResults(response.results || []);
     } catch (error) {
       console.error('Search error:', error);
       setSearchResults([]);
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, searchMode, currentUserId]);
+  }, [searchQuery, currentUserId]);
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -142,54 +134,43 @@ const SearchModal: React.FC<SearchModalProps> = ({
     >
       {/* Header with gradient background */}
       <div style={{ 
-        padding: '24px 28px',
+        padding: '24px 28px 20px',
         borderBottom: '1px solid #f0f0f0',
         background: 'linear-gradient(135deg, #0093E9 0%, #80D0C7 100%)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <SearchOutlined style={{ fontSize: 28, color: 'white' }} />
-          <Text strong style={{ fontSize: 20, color: 'white', margin: 0 }}>
-            Search All Messages
-          </Text>
+          <div>
+            <Text strong style={{ fontSize: 20, color: 'white', margin: 0, display: 'block' }}>
+              Semantic Search
+            </Text>
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', margin: 0 }}>
+              Find messages by meaning, not just keywords
+            </Text>
+          </div>
         </div>
         
         <Input
           ref={inputRef}
           size="large"
-          placeholder={"Search across all conversations..."}
+          placeholder="Search messages by meaning... (Press Enter)"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyPress={handleKeyPress}
           prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
+          suffix={
+            searchQuery && (
+              <Tag color="blue" style={{ fontSize: 12, marginRight: 0 }}>
+                {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
+              </Tag>
+            )
+          }
           style={{
             borderRadius: 12,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            marginTop: 16,
             fontSize: 16,
           }}
         />
-
-        <Space style={{ marginTop: 16 }} size="middle">
-          <Radio.Group 
-            value={searchMode} 
-            onChange={(e) => setSearchMode(e.target.value)}
-            buttonStyle="solid"
-            size="middle"
-          >
-            <Radio.Button value="all" style={{ borderRadius: '8px 0 0 8px' }}>
-              <MessageOutlined /> All Messages
-            </Radio.Button>
-            <Radio.Button value="important" style={{ borderRadius: '0 8px 8px 0' }}>
-              <StarFilled style={{ color: '#faad14' }} /> Important Only
-            </Radio.Button>
-          </Radio.Group>
-          
-          {searchQuery && (
-            <Tag color="blue" style={{ fontSize: 13, padding: '4px 12px' }}>
-              {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
-            </Tag>
-          )}
-        </Space>
       </div>
 
       {/* Results area */}
@@ -283,30 +264,32 @@ const SearchModal: React.FC<SearchModalProps> = ({
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <div>
-                <Text type="secondary">No messages found</Text>
+                <Text type="secondary" style={{ fontSize: 15 }}>No messages found</Text>
                 <br />
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  Try a different search query or toggle search mode
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  Try rephrasing your search query
                 </Text>
               </div>
             }
-            style={{ padding: '40px' }}
+            style={{ padding: '60px 20px' }}
           />
         ) : (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#8c8c8c' }}>
-            <SearchOutlined style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }} />
-            <div style={{ fontSize: 14 }}>
-              <div style={{ marginBottom: 8 }}>
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#8c8c8c' }}>
+            <SearchOutlined style={{ fontSize: 56, marginBottom: 20, opacity: 0.2 }} />
+            <div style={{ fontSize: 15, lineHeight: 1.8 }}>
+              <div style={{ marginBottom: 4, color: '#595959' }}>
                 Type your query and press <kbd style={{ 
-                  padding: '2px 6px', 
+                  padding: '3px 8px', 
                   border: '1px solid #d9d9d9',
-                  borderRadius: 3,
+                  borderRadius: 4,
                   background: '#fafafa',
-                  fontFamily: 'monospace'
+                  fontFamily: 'monospace',
+                  fontSize: 14,
+                  fontWeight: 500,
                 }}>Enter</kbd>
               </div>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                Search finds messages by semantic meaning, not just keywords
+              <div style={{ fontSize: 13, opacity: 0.7, marginTop: 12 }}>
+                🔍 Semantic search understands the meaning of your query
               </div>
             </div>
           </div>
@@ -317,12 +300,11 @@ const SearchModal: React.FC<SearchModalProps> = ({
         <div style={{ 
           padding: '12px 24px',
           borderTop: '1px solid #f0f0f0',
-          background: '#fafafa',
+          background: 'white',
           textAlign: 'center'
         }}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Found {searchResults.length} relevant message{searchResults.length !== 1 ? 's' : ''} • 
-            Click to view in conversation
+            💡 Click any result to view full conversation context
           </Text>
         </div>
       )}

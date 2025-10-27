@@ -2,7 +2,7 @@ import { Conversation } from "../models/conversation.model";
 
 class ConversationRepository {
 
-    async createConversation(user_id: number, conversation_name?: string): Promise<Conversation> {
+    async createConversation(user_id: string, conversation_name?: string): Promise<Conversation> {
         return Conversation.create({
             user_id,
             conversation_name: conversation_name || "New Chat", // tên mặc định
@@ -10,7 +10,7 @@ class ConversationRepository {
     }
 
 
-    async getConversationsByUserId(user_id: number, limit: number, offset: number): Promise<{ rows: Conversation[]; count: number }> {
+    async getConversationsByUserId(user_id: string, limit: number, offset: number): Promise<{ rows: Conversation[]; count: number }> {
         return Conversation.findAndCountAll({
             where: { user_id },
             order: [["updatedAt", "DESC"]], // ✅ Order by most recent first

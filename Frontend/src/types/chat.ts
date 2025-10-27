@@ -14,7 +14,7 @@ export interface Message {
 export interface Conversation {
   id: string;
   title: string;
-  user_id: number;
+  user_id: string;
   createdAt: Date;
   updatedAt: Date;
   messages?: Message[];

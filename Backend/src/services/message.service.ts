@@ -40,7 +40,7 @@ export class MessageService {
     );
 
     // ✅ Auto-rename conversation if this is the first user message
-    let autoRenamedTo: string | null = null;
+    let autoRenamedTo: string | null | undefined = null;
     if (count === 0 && sender_type === "user") {
       autoRenamedTo = await this.autoRenameConversation(conversation_id, content);
     }

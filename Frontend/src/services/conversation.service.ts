@@ -10,7 +10,7 @@ type ApiResponse<T> = {
 type ConversationDto = {
 	id: number;
 	conversation_name: string;
-	user_id?: number;
+	user_id?: string;
 	createdAt?: string;
 	updatedAt?: string;
 };
@@ -28,7 +28,7 @@ type PaginatedConversationsDto = {
 const mapConversation = (dto: ConversationDto): Conversation => ({
 	id: String(dto.id),
 	title: dto.conversation_name ?? 'New chat',
-	user_id: dto.user_id ?? 0,
+	user_id: dto.user_id ?? '',
 	createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(),
 	updatedAt: dto.updatedAt ? new Date(dto.updatedAt) : new Date(),
 });

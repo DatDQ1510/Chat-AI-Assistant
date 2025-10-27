@@ -1,13 +1,14 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database.js";
 import { User } from "./user.model.js";
-
+import { Project } from "./project.model.js";
 interface ConversationAttributes {
-  id: number;
+  id: string;
   conversation_name: string;
-  user_id: number;
+  user_id: string;
   lastSummariedIndex?: number | 0;
   summary?: string | null;
+  project_id?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -16,14 +17,14 @@ interface ConversationCreationAttributes extends Optional<ConversationAttributes
 
 export class Conversation extends Model<ConversationAttributes, ConversationCreationAttributes>
   implements ConversationAttributes {
-  public id!: number;
+  public id!: string;
   public conversation_name!: string;
-  public user_id!: number;
+  public user_id!: string;
   public lastSummariedIndex!: number | 0;
   public summary!: string | null;
+  public project_id!: string | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
-  
 }
 
 Conversation.init(
@@ -55,6 +56,15 @@ Conversation.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    project_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: "projects",
+        key: "id",
+      },
+      onDelete: "SET NULL",
+    },
   },
   {
     sequelize,
@@ -66,3 +76,7 @@ Conversation.init(
 // 🔗 Association
 Conversation.belongsTo(User, { foreignKey: "user_id", as: "user" });
 User.hasMany(Conversation, { foreignKey: "user_id", as: "conversations" });
+
+
+Conversation.belongsTo(Project, { foreignKey: "project_id", as: "project" });
+Project.hasMany(Conversation, { foreignKey: "project_id", as: "conversations" });

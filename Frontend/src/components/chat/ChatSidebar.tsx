@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Card, Button, Input, Typography, Empty, Avatar, Divider, Spin } from 'antd';
+import React, { useMemo, useRef, useEffect } from 'react';
+import { Card, Button, Typography, Empty, Avatar, Divider, Spin } from 'antd';
 import {
   PlusOutlined,
   SearchOutlined,
@@ -45,17 +45,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   hasMore = false,
   isLoadingMore = false,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+
   const listRef = useRef<HTMLDivElement>(null);
-
-  const filteredConversations = useMemo(() => {
-    if (!searchTerm.trim()) return conversations;
-    const lower = searchTerm.toLowerCase();
-    return conversations.filter((conversation) =>
-      conversation.title.toLowerCase().includes(lower)
-    );
-  }, [conversations, searchTerm]);
-
   // Handle scroll to load more conversations
   useEffect(() => {
     const listElement = listRef.current;
@@ -191,16 +182,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         New chat
       </Button>
 
-      <Input
-        allowClear
-        placeholder="Search conversations"
-        prefix={<SearchOutlined />}
-        value={searchTerm}
-        onChange={(event) => setSearchTerm(event.target.value)}
-        style={styles.searchInput}
-        size="large"
-      />
-
       {onOpenSearch && (
         <Button
           icon={<SearchOutlined />}
@@ -220,9 +201,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       <Divider style={{ margin: '0' }} />
 
       <div style={styles.list} ref={listRef}>
-        {filteredConversations.length ? (
+        {conversations.length ? (
           <>
-            {filteredConversations.map((conversation) => (
+            {conversations.map((conversation) => (
               <ConversationItem
                 key={conversation.id}
                 conversation={conversation}

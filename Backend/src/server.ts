@@ -13,9 +13,6 @@ const startServer = async () => {
   try {
     // 1. Connect to database
     await connectDB();
-    await sequelize.sync({
-      alter: true, // ✅ Auto sync model changes with database
-    });
     console.log("✅ Database connected and synced");
 
     // 2. Create HTTP server

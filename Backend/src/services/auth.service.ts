@@ -31,7 +31,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async logout(userId: number, sessionId: string) {
+  async logout(userId: string, sessionId: string) {
     try {
       // Xóa token của phiên cụ thể
       const refreshKey = `refresh_token:${userId}:${sessionId}`;
@@ -46,7 +46,7 @@ export class AuthService {
     }
   }
 
-async refresh(refreshToken: string, sessionId: string, decoded: { id: number; email: string }) {
+async refresh(refreshToken: string, sessionId: string, decoded: { id: string; email: string }) {
   const userId = decoded.id;
 
   const stored = await redisConnection.get(`refresh_token:${userId}:${sessionId}`);

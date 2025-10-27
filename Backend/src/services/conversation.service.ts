@@ -3,11 +3,11 @@ import ConversationRepository from "../repositories/conversation.repository";
 class ConversationService {
     private conversationRepository = ConversationRepository;
 
-    async createConversation(user_id: number, conversation_name: string) {
+    async createConversation(user_id: string, conversation_name: string) {
         return this.conversationRepository.createConversation(user_id, conversation_name);
     }
 
-    async getConversationsByUserId(user_id: number, limit = 10, page = 1) {
+    async getConversationsByUserId(user_id: string, limit = 10, page = 1) {
         const offset = (page - 1) * limit;
         return this.conversationRepository.getConversationsByUserId(user_id, limit, offset);
     }

@@ -80,7 +80,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
     const { accessToken, refreshToken: newRefreshToken } = await authService.refresh(
       refreshToken,
       sessionId,
-      decoded as { id: number; email: string }
+      decoded as { id: string; email: string }
     );
     console.log('New refresh token generated:', newRefreshToken);
     // Cập nhật cookie refreshToken mới
