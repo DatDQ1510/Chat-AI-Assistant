@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Input, Modal, List, Typography, Empty, Space, Tag } from 'antd';
+import { Input, Modal, List, Typography, Empty, Space, Tag, message } from 'antd';
 import { SearchOutlined, CloseOutlined, RobotOutlined, UserOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import messageService from '../../services/message.service';
 
@@ -96,6 +96,7 @@ const SemanticChatDrawer: React.FC<SemanticChatDrawerProps> = ({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      message.loading('Searching...', 3);
       handleSearch();
     }
   };

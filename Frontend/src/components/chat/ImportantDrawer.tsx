@@ -96,30 +96,31 @@ const ImportantDrawer: React.FC<ImportantDrawerProps> = ({
     return content.substring(0, maxChars) + '...';
   };
 
-  // Show only first 5 important messages
-  const displayMessages = importantMessages.slice(0, 5);
+  // ✅ Show ALL important messages, not just 5
+  const displayMessages = importantMessages;
 
   return (
     <Modal
       title={
-        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Space style={{ width: '100%' }}>
           <Space>
-            <StarFilled style={{ color: '#faad14', fontSize: 16 }} />
-            <Text strong style={{ fontSize: 13 }}>Important Messages</Text>
+            <StarFilled style={{ color: '#faad14', fontSize: 20 }} />
+            <Text strong style={{ fontSize: 20 }}>Important Messages</Text>
           </Space>
-          <Tag color="gold" style={{ marginRight: 0, fontSize: 11 }}>{importantMessages.length}</Tag>
+          <Tag color="gold" style={{ marginLeft: 'auto', fontSize: 20 }}>{importantMessages.length}</Tag>
         </Space>
       }
       open={visible}
       onCancel={onClose}
       footer={null}
-      width={480}
+      width={600}
       closeIcon={<CloseOutlined />}
       styles={{
         body: { 
           padding: 0,
           maxHeight: '400px',
           overflowY: 'auto',
+
         },
       }}
     >
@@ -128,7 +129,7 @@ const ImportantDrawer: React.FC<ImportantDrawerProps> = ({
           display: 'flex', 
           justifyContent: 'center', 
           alignItems: 'center', 
-          padding: '60px 20px',
+          padding: '48px 12px',
         }}>
           <Spin size="large" tip="Loading..." />
         </div>
