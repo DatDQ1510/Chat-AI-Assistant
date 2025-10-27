@@ -11,6 +11,7 @@ interface UseSocketEventsProps {
   setMessagesMap: React.Dispatch<React.SetStateAction<{ [conversationId: string]: Message[] }>>;
   setChatState: React.Dispatch<React.SetStateAction<ChatState>>;
   setIsWaitingForAI: React.Dispatch<React.SetStateAction<boolean>>;
+  refreshConversationOrder?: () => void; // ✅ Simple refresh callback
 }
 
 export const useSocketEvents = ({
@@ -19,6 +20,7 @@ export const useSocketEvents = ({
   setMessagesMap,
   setChatState,
   setIsWaitingForAI,
+  refreshConversationOrder, // ✅ Accept callback
 }: UseSocketEventsProps) => {
   const aiResponseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentAIMessageRef = useRef<{ id: string; conversationId: string } | null>(null);
@@ -66,6 +68,83 @@ export const useSocketEvents = ({
       if (callback) {
         callback({ received: true, messageId: msg.id });
       }
+    });
+
+    // ✅ Handle user_message_saved - Replace temp user message with real saved one
+    socket.on("user_message_saved", (savedMessage) => {
+      console.log("💾 User message saved:", savedMessage);
+      const convId = savedMessage.conversation_id;
+      
+      setMessagesMap(prev => {
+        const currentMessages = prev[convId] || [];
+        
+        // Find temp message with matching content
+        const tempIndex = currentMessages.findIndex(m => 
+          m.isTemp && 
+          m.role === 'user' &&
+          m.content === savedMessage.content &&
+          m.status === 'sending'
+        );
+
+        if (tempIndex !== -1) {
+          console.log("🔄 Replacing temp user message with saved one");
+          const updated = [...currentMessages];
+          updated[tempIndex] = {
+            id: savedMessage.id,
+            role: 'user',
+            content: savedMessage.content,
+            timestamp: new Date(savedMessage.created_at),
+            status: 'sent' as const,
+            isTemp: false,
+            attachments: savedMessage.attachments,
+          };
+
+          // ✅ Refresh conversation order
+          if (refreshConversationOrder) {
+            refreshConversationOrder();
+          }
+
+          return { ...prev, [convId]: updated };
+        } else {
+          // If no temp message found, add as new (shouldn't happen normally)
+          console.log("➕ Adding saved user message");
+          
+          // ✅ Refresh conversation order
+          if (refreshConversationOrder) {
+            refreshConversationOrder();
+          }
+
+          return { 
+            ...prev, 
+            [convId]: [
+              ...currentMessages, 
+              {
+                id: savedMessage.id,
+                role: 'user' as const,
+                content: savedMessage.content,
+                timestamp: new Date(savedMessage.created_at),
+                status: 'sent' as const,
+                isTemp: false,
+                attachments: savedMessage.attachments,
+              }
+            ] 
+          };
+        }
+      });
+
+      // Broadcast to other tabs
+      broadcastToTabs({
+        type: 'update_message',
+        payload: {
+          conversationId: convId,
+          messageId: savedMessage.id,
+          updates: { 
+            id: savedMessage.id,
+            status: 'sent' as const, 
+            isTemp: false 
+          }
+        }
+      });
     });
 
     // Handle ai_message_init
@@ -222,6 +301,11 @@ export const useSocketEvents = ({
         return updated;
       });
 
+      // ✅ Refresh conversation order with AI response
+      if (refreshConversationOrder && conversation_id) {
+        refreshConversationOrder();
+      }
+
       broadcastToTabs({
         type: 'ai_stream_end',
         payload: {
@@ -235,6 +319,22 @@ export const useSocketEvents = ({
       broadcastToTabs({
         type: 'streaming_status',
         payload: { isStreaming: false, isWaitingForAI: false }
+      });
+    });
+
+    // ✅ Handle conversation_list_updated - Refresh conversation list
+    socket.on("conversation_list_updated", ({ conversation_id, action, timestamp }) => {
+      console.log(`📢 Conversation list updated: ${conversation_id} - ${action} at ${timestamp}`);
+      
+      // Trigger refresh
+      if (refreshConversationOrder) {
+        refreshConversationOrder();
+      }
+
+      // Broadcast to other tabs
+      broadcastToTabs({
+        type: 'refresh_conversations',
+        payload: {},
       });
     });
 
@@ -337,10 +437,12 @@ export const useSocketEvents = ({
 
     return () => {
       socket.off("receive_message");
+      socket.off("user_message_saved"); // ✅ Cleanup new event
       socket.off("ai_message_init");
       socket.off("ai_stream");
       socket.off("ai_stream_end");
       socket.off("ai_error");
+      socket.off("conversation_list_updated"); // ✅ Cleanup
       socket.off("disconnect");
       socket.off("connect");
       
@@ -348,7 +450,7 @@ export const useSocketEvents = ({
         clearTimeout(aiResponseTimeoutRef.current);
       }
     };
-  }, [socket, currentConversationId, setMessagesMap, setChatState, setIsWaitingForAI]);
+  }, [socket, currentConversationId, setMessagesMap, setChatState, setIsWaitingForAI, refreshConversationOrder]);
 
   return { aiResponseTimeoutRef, currentAIMessageRef };
 };

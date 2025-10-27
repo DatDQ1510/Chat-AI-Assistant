@@ -13,11 +13,11 @@ class ConversationRepository {
     async getConversationsByUserId(user_id: number, limit: number, offset: number): Promise<{ rows: Conversation[]; count: number }> {
         return Conversation.findAndCountAll({
             where: { user_id },
-            order: [["createdAt", "DESC"]],
+            order: [["updatedAt", "DESC"]], // ✅ Order by most recent first
             limit,
             offset,
             attributes: ["conversation_name", "id", "createdAt", "updatedAt", "user_id"],
-         });
+        });
     }
 
     async getConversationById(id: string): Promise<Conversation | null> {

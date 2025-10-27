@@ -13,7 +13,8 @@ export class MessageService {
     user_id: string | null,
     chatbot_id: string | null,
     content: string,
-  ) {
+    file_urls?: string[] // ✅ Add file_urls parameter
+  ): Promise<{ message: any; autoRenamedTo?: string }> {
 
     const count = await messageRepository.countMessagesByConversationId(conversation_id);
 
@@ -27,15 +28,86 @@ export class MessageService {
       return null;
     });
 
-
-    return messageRepository.createMessage(
+    // ✅ Create message
+    const message = await messageRepository.createMessage(
       conversation_id,
       sender_type,
       user_id,
       chatbot_id,
       content,
-      embedding || null
+      embedding || null,
+      file_urls // ✅ Pass file_urls to repository
     );
+
+    // ✅ Auto-rename conversation if this is the first user message
+    let autoRenamedTo: string | null = null;
+    if (count === 0 && sender_type === "user") {
+      autoRenamedTo = await this.autoRenameConversation(conversation_id, content);
+    }
+
+    // ✅ Touch conversation to update updatedAt timestamp
+    await this.touchConversation(conversation_id);
+
+    return { 
+      message, 
+      autoRenamedTo: autoRenamedTo || undefined 
+    };
+  }
+
+  /**
+   * Auto-rename conversation based on first user message
+   */
+  private async autoRenameConversation(conversation_id: string, content: string) {
+    try {
+      const conversation = await conversationService.getConversationById(conversation_id);
+      
+      if (!conversation) return;
+
+      // Check if conversation still has default name
+      const isDefaultName = conversation.conversation_name === 'New Chat' || 
+                           conversation.conversation_name.startsWith('New Chat');
+      
+      if (!isDefaultName) return; // User already renamed, don't override
+
+      // Generate new name from first message
+      let newName = content.trim();
+      
+      // Truncate if too long
+      if (newName.length > 50) {
+        newName = newName.substring(0, 50) + '...';
+      }
+      
+      // Remove newlines
+      newName = newName.replace(/\n/g, ' ');
+      
+      // Update conversation name
+      await conversationService.updateConversation(conversation_id, newName);
+      console.log(`✅ Auto-renamed conversation ${conversation_id} to: "${newName}"`);
+      
+      return newName; // ✅ Return new name to emit via socket
+      
+    } catch (error) {
+      console.error(`Failed to auto-rename conversation ${conversation_id}:`, error);
+      // Non-critical, don't throw
+      return null;
+    }
+  }
+
+  /**
+   * Touch conversation to update its updatedAt timestamp
+   */
+  private async touchConversation(conversation_id: string) {
+    try {
+      const conversation = await conversationService.getConversationById(conversation_id);
+      if (conversation) {
+        // Update without changing any fields - just triggers updatedAt
+        await conversation.save({ silent: false });
+        console.log(`✅ Touched conversation ${conversation_id} - updatedAt updated`);
+      }
+    } catch (error) {
+      console.error(`Failed to touch conversation ${conversation_id}:`, error);
+      // Non-critical, don't throw
+    }
   }
 
   /**
@@ -56,8 +128,20 @@ export class MessageService {
 
     const totalPages = Math.ceil(total / limit);
 
+    // ✅ Map messages to include file_urls from attachments field
+    const mappedMessages = messages.map((msg: any) => ({
+      id: msg.id,
+      conversation_id: msg.conversation_id,
+      sender_type: msg.sender_type,
+      content: msg.content,
+      created_at: msg.createdAt,
+      updated_at: msg.updatedAt,
+      important: msg.important,
+      file_urls: msg.attachments || [], // ✅ Map attachments to file_urls
+    }));
+
     return {
-      messages,
+      messages: mappedMessages,
       pagination: {
         page,
         limit,
@@ -107,7 +191,7 @@ export class MessageService {
     query: string,
     limit: number = 5,
     conversationId?: string,
-    relevanceThreshold: number = 0.3 // Minimum relevance score (0-1 scale, lower distance = higher relevance)
+    relevanceThreshold: number = 0.5 // Minimum relevance score (0-1 scale, lower distance = higher relevance)
   ) {
     console.log("Searching messages with vector embedding for query:", query);
     console.log("Conversation ID:", conversationId);

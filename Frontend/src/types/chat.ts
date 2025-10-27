@@ -33,6 +33,9 @@ export interface AttachedFile {
   type: string;
   file: File;
   preview?: string;
+  url?: string; // ✅ Cloudinary URL after upload
+  uploading?: boolean; // ✅ Upload in progress
+  uploadError?: string; // ✅ Upload error message
 }
 
 export interface ChatInputProps {

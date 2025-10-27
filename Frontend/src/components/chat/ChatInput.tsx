@@ -1,30 +1,62 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Input, Button, message, Typography, Image, Space } from 'antd';
-import { SendOutlined, PaperClipOutlined, BulbOutlined, CloseCircleOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { Input, Button, message, Typography, Image, Space, Spin } from 'antd';
+import { SendOutlined, PaperClipOutlined, BulbOutlined, CloseCircleOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, PlayCircleOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { ChatInputProps, AttachedFile } from '../../types/chat';
+import uploadService from '../../services/upload.service';
 
 const { TextArea } = Input;
 
-const ChatInput: React.FC<ChatInputProps> = ({
+// ✅ Export interface để ChatContainer có thể sử dụng
+export interface ChatInputRef {
+  setInputValue: (value: string) => void;
+  focusInput: () => void;
+}
+
+const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
   onSendMessage,
   isLoading = false,
   placeholder = 'Message ChatGPT...',
-}) => {
+}, ref) => {
   const [inputValue, setInputValue] = useState('');
   const [suggestMode, setSuggestMode] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ✅ Expose methods để ChatContainer có thể gọi
+  useImperativeHandle(ref, () => ({
+    setInputValue: (value: string) => {
+      setInputValue(value);
+    },
+    focusInput: () => {
+      textAreaRef.current?.focus();
+    },
+  }));
+
   const handleSend = () => {
     const trimmedValue = inputValue.trim();
-    if ((!trimmedValue && attachedFiles.length === 0) || isLoading) return;
+    
+    // ✅ Check if any files are still uploading
+    const uploadingFiles = attachedFiles.filter(f => f.uploading);
+    if (uploadingFiles.length > 0) {
+      message.warning(`⏳ Please wait, ${uploadingFiles.length} file(s) still uploading...`);
+      return;
+    }
+    
+    // ✅ Filter only successfully uploaded files (have URL)
+    const successfullyUploadedFiles = attachedFiles.filter(f => f.url && !f.uploadError);
+    
+    if (!trimmedValue && successfullyUploadedFiles.length === 0) {
+      if (isLoading) return;
+      message.warning('Please type a message or upload files');
+      return;
+    }
 
-    // Pass files to parent component
+    // Pass only successfully uploaded files with URLs
     onSendMessage(
       trimmedValue || '📎 Files attached', 
       suggestMode,
-      attachedFiles.length > 0 ? attachedFiles : undefined
+      successfullyUploadedFiles.length > 0 ? successfullyUploadedFiles : undefined
     );
     
     setInputValue('');
@@ -46,10 +78,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
-    files.forEach(file => {
+    for (const file of files) {
       // Validate file type
       const isAllowed =
         file.type === 'application/pdf' ||
@@ -58,14 +90,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
       
       if (!isAllowed) {
         message.error(`❌ ${file.name}: Only PDF, images, and videos are allowed`);
-        return;
+        continue;
       }
 
       // Validate file size (max 10MB)
       const maxSize = 10 * 1024 * 1024; // 10MB
       if (file.size > maxSize) {
         message.error(`❌ ${file.name}: File size exceeds 10MB`);
-        return;
+        continue;
       }
 
       const newFile: AttachedFile = {
@@ -73,7 +105,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
         name: file.name,
         type: file.type,
         file,
+        uploading: true, // ✅ Start with uploading state
       };
+
+      // Add file to state immediately
+      setAttachedFiles(prev => [...prev, newFile]);
 
       // Create preview for images
       if (file.type.startsWith('image/')) {
@@ -90,8 +126,41 @@ const ChatInput: React.FC<ChatInputProps> = ({
         reader.readAsDataURL(file);
       }
 
-      setAttachedFiles(prev => [...prev, newFile]);
-    });
+      // ✅ Upload to Cloudinary immediately
+      try {
+        const result = await uploadService.uploadFile(file);
+        
+        if (result.success && result.url) {
+          // Update file with URL and remove uploading state
+          setAttachedFiles(prev => 
+            prev.map(f => 
+              f.uid === newFile.uid 
+                ? { ...f, url: result.url, uploading: false }
+                : f
+            )
+          );
+        } else {
+          // Mark upload as failed
+          setAttachedFiles(prev => 
+            prev.map(f => 
+              f.uid === newFile.uid 
+                ? { ...f, uploading: false, uploadError: result.error || 'Upload failed' }
+                : f
+            )
+          );
+          message.error(`❌ ${file.name}: ${result.error || 'Upload failed'}`);
+        }
+      } catch {
+        setAttachedFiles(prev => 
+          prev.map(f => 
+            f.uid === newFile.uid 
+              ? { ...f, uploading: false, uploadError: 'Upload failed' }
+              : f
+          )
+        );
+        message.error(`❌ ${file.name}: Upload failed`);
+      }
+    }
 
     // Reset input
     if (fileInputRef.current) {
@@ -162,14 +231,29 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     padding: '8px 12px',
                     background: 'white',
                     borderRadius: 8,
-                    border: '1px solid #e5e7eb',
+                    border: file.uploadError 
+                      ? '1px solid #ef4444' 
+                      : file.uploading 
+                        ? '1px solid #0284c7'
+                        : '1px solid #10b981',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
                     maxWidth: 200,
+                    opacity: file.uploadError ? 0.6 : 1,
                   }}
                 >
-                  {file.preview ? (
+                  {/* ✅ Loading/Success indicator */}
+                  {file.uploading && (
+                    <Spin 
+                      indicator={<LoadingOutlined style={{ fontSize: 20, color: '#0284c7' }} spin />} 
+                    />
+                  )}
+                  {!file.uploading && !file.uploadError && file.url && (
+                    <CheckCircleOutlined style={{ fontSize: 20, color: '#10b981' }} />
+                  )}
+                  
+                  {file.preview && !file.uploading ? (
                     <Image
                       src={file.preview}
                       alt={file.name}
@@ -178,15 +262,21 @@ const ChatInput: React.FC<ChatInputProps> = ({
                       style={{ borderRadius: 4, objectFit: 'cover' }}
                       preview={false}
                     />
-                  ) : (
+                  ) : !file.uploading ? (
                     <div style={{ fontSize: 24 }}>
                       {getFileIcon(file.type)}
                     </div>
-                  )}
+                  ) : null}
+                  
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <Typography.Text 
                       ellipsis 
-                      style={{ fontSize: 12, display: 'block', lineHeight: 1.2 }}
+                      style={{ 
+                        fontSize: 12, 
+                        display: 'block', 
+                        lineHeight: 1.2,
+                        color: file.uploadError ? '#ef4444' : undefined 
+                      }}
                     >
                       {file.name}
                     </Typography.Text>
@@ -194,9 +284,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
                       type="secondary" 
                       style={{ fontSize: 11, lineHeight: 1.2 }}
                     >
-                      {formatFileSize(file.file.size)}
+                      {file.uploading 
+                        ? 'Uploading...' 
+                        : file.uploadError 
+                          ? 'Failed' 
+                          : formatFileSize(file.file.size)}
                     </Typography.Text>
                   </div>
+                  
                   <Button
                     type="text"
                     size="small"
@@ -233,13 +328,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
         />
         
         <Button
-          icon={<PaperClipOutlined style={{ fontSize: 20 }}/>}
+          icon={<PaperClipOutlined style={{ fontSize: 16 }}/>}
           onClick={handleFileUpload}
           disabled={isLoading}
           style={{
-            height: 60,
-            borderRadius: 20,
-            minWidth: 60,
+            height: 44,
+            borderRadius: 8,
+            minWidth: 44,
             border: attachedFiles.length > 0 ? '2px solid #0284c7' : '1px solid #e5e7eb',
             color: attachedFiles.length > 0 ? '#0284c7' : undefined,
             backgroundColor: attachedFiles.length > 0 ? '#f0f9ff' : 'transparent',
@@ -252,11 +347,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
           disabled={isLoading}
           title={suggestMode ? "Suggestions enabled - Click to disable" : "Click to enable AI suggestions"}
           style={{
-            height: 60,
-            borderRadius: 20,
-            minWidth: 60,
+            height: 44  ,
+            borderRadius: 8,
+            minWidth: 44,
             border: suggestMode ? '2px solid #f59e0b' : '1px solid #e5e7eb',
-            color: suggestMode? '#eb4f11ff' : '#f59e0b',
+            color: suggestMode ? '#eb4f11ff' : '#f59e0b',
             backgroundColor: suggestMode ? '#fffbeb' : 'transparent',
           }}
         />
@@ -270,10 +365,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
           autoSize={{ minRows: 1, maxRows: 6 }}
           disabled={isLoading}
           style={{ 
-            borderRadius: 12, 
+            borderRadius: 8, 
             padding: '12px 16px',
             border: '1px solid #e5e7eb',
-            fontSize: 17,
+            fontSize: 14,
             resize: 'none'
           }}
         />
@@ -285,9 +380,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
           disabled={(!inputValue.trim() && attachedFiles.length === 0) || isLoading}
           loading={isLoading}
           style={{ 
-            borderRadius: 20, 
-            height: 60,
-            minWidth: 60,
+            borderRadius: 8, 
+            height: 44,
+            minWidth: 44,
             background: (inputValue.trim() || attachedFiles.length > 0) ? '#0284c7' : undefined,
             borderColor: (inputValue.trim() || attachedFiles.length > 0) ? '#0284c7' : undefined
           }}
@@ -314,6 +409,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
       </Typography.Text>
     </div>
   );
-};
+});
+
+ChatInput.displayName = 'ChatInput';
 
 export default ChatInput;

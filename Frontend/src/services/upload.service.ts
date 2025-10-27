@@ -22,7 +22,7 @@ const uploadFile = async (file: File): Promise<UploadResult> => {
     formData.append('file', file);
 
     const response = await axiosClient.post<UploadResponse>(
-      '/api/upload',
+      '/v1/api/upload',
       formData,
       {
         headers: {

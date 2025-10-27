@@ -37,7 +37,7 @@ export const createConversation = async (req: Request, res: Response, next: Func
  */
 export const getUserConversations = async (req: Request, res: Response, next: Function) => {
   try {
-    console.log(1);
+    console.log('[getUserConversations] Request received');
 
     const user_id = req.user?.id;
     if (!user_id)
@@ -46,11 +46,15 @@ export const getUserConversations = async (req: Request, res: Response, next: Fu
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
 
+    console.log(`[getUserConversations] Fetching conversations for user ${user_id}, page ${page}, limit ${limit}`);
+
     const { rows, count } = await ConversationService.getConversationsByUserId(
       user_id,
       limit,
       page
     );
+
+    console.log(`[getUserConversations] Fetched ${rows.length} conversations out of ${count} total`);
 
     res.status(200).json(
       successResponse(
@@ -66,6 +70,7 @@ export const getUserConversations = async (req: Request, res: Response, next: Fu
       )
     );
   } catch (error: any) {
+    console.error('[getUserConversations] Error:', error);
     next(error);
   }
 };

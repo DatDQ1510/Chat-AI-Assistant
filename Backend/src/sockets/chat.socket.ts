@@ -46,9 +46,9 @@ export const chatSocket = (io: Server) => {
         user_id?: string | null; 
         content: string;
         needs_suggestions?: boolean;
-        files?: AttachedFile[];
+        file_urls?: string[]; // ✅ Support file URLs
       }, callback?: (response: { success: boolean; error?: string; errorCode?: number }) => void) => {
-        const { conversation_id, content, needs_suggestions = false, files } = payload || {};
+        const { conversation_id, content, needs_suggestions = false, file_urls } = payload || {};
 
         try {
           // Validation
@@ -60,13 +60,46 @@ export const chatSocket = (io: Server) => {
           if (needs_suggestions) console.log("💡 Suggestions requested");
           
           // ✅ STEP 1: Save user message first (optimistic approach)
-          const userMessage = await messageService.createMessage(
+          const result = await messageService.createMessage(
             conversation_id,
             "user",
             user_id ?? null,
             null,
-            content
+            content,
+            file_urls // ✅ Pass file_urls to save in DB
           );
+          const userMessage = result.message;
+          const autoRenamedTo = result.autoRenamedTo;
+          
+          // ✅ STEP 1.5: Emit saved user message to all clients in room
+          io.to(conversation_id).emit("user_message_saved", {
+            id: (userMessage as any).id,
+            conversation_id,
+            role: "user",
+            content,
+            sender_type: "user",
+            attachments: file_urls || [], // ✅ Include file URLs
+            created_at: (userMessage as any).createdAt || new Date().toISOString(),
+            updated_at: (userMessage as any).updatedAt || new Date().toISOString(),
+          });
+          console.log(`✅ User message saved and emitted: ${(userMessage as any).id}${file_urls?.length ? ` with ${file_urls.length} file(s)` : ''}`);
+
+          // ✅ STEP 1.6: Emit conversation updated event to trigger list refresh
+          if (user_id) {
+            // Emit to all sockets of this user
+            const userSockets = socketManager.getSockets(user_id);
+            userSockets.forEach((socketId: string) => {
+              io.to(socketId).emit("conversation_list_updated", {
+                conversation_id,
+                action: "message_added",
+                timestamp: new Date().toISOString(),
+                autoRenamedTo, // ✅ Include auto-rename info
+              });
+            });
+            console.log(`📢 Conversation list update emitted to user ${user_id}'s ${userSockets.length} connection(s)${autoRenamedTo ? ` (auto-renamed to: "${autoRenamedTo}")` : ''}`);
+          }
+
+          
           // ✅ STEP 2: Acknowledge receipt to frontend
           if (callback) {
             callback({ success: true });
@@ -140,6 +173,19 @@ export const chatSocket = (io: Server) => {
               full_content: aiFullReply,
               conversation_id
             });
+
+            // ✅ Emit conversation updated event after AI response
+            if (user_id) {
+              const userSockets = socketManager.getSockets(user_id);
+              userSockets.forEach((socketId: string) => {
+                io.to(socketId).emit("conversation_list_updated", {
+                  conversation_id,
+                  action: "ai_replied",
+                  timestamp: new Date().toISOString(),
+                });
+              });
+              console.log(`📢 Conversation list update (AI) emitted to user ${user_id}`);
+            }
 
           } catch (aiError: any) {
             // ✅ AI failed - emit error to frontend but don't crash

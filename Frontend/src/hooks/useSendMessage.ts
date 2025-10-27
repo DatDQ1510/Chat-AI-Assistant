@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { message } from 'antd';
 import { Socket } from 'socket.io-client';
 import conversationService from '../services/conversation.service';
-import uploadService from '../services/upload.service';
 import { broadcastToTabs } from '../utils/tabSync';
 import type { Message, Conversation, ChatState, AttachedFile } from '../types/chat';
 
@@ -180,35 +179,12 @@ export const useSendMessage = ({
       }
     }
 
-    // Upload files first if present
-    let uploadedFileUrls: string[] = [];
-    if (files && files.length > 0) {
-      console.log('📎 Uploading files:', files.map(f => f.name));
-      message.loading(`Uploading ${files.length} file(s)...`, 0);
-      
-      try {
-        const uploadResult = await uploadService.uploadFiles(files.map(f => f.file));
-        message.destroy(); // Close loading message
-        
-        if (uploadResult.errors.length > 0) {
-          console.error('Upload errors:', uploadResult.errors);
-          uploadResult.errors.forEach(err => message.error(err, 3));
-        }
-        
-        if (uploadResult.urls.length > 0) {
-          uploadedFileUrls = uploadResult.urls;
-          message.success(`✅ Uploaded ${uploadResult.urls.length} file(s)`);
-        } else {
-          message.error('❌ All files failed to upload');
-          return; // Stop if all uploads failed
-        }
-      } catch (error) {
-        message.destroy();
-        console.error('Upload error:', error);
-        message.error('❌ Failed to upload files');
-        return;
-      }
-    }
+    // ✅ Extract URLs from already uploaded files (no need to upload again)
+    const uploadedFileUrls: string[] = files
+      ? files.filter(f => f.url).map(f => f.url!)
+      : [];
+
+    console.log('📎 Using pre-uploaded file URLs:', uploadedFileUrls);
 
     // Create user message
     const userMessage: Message = {
