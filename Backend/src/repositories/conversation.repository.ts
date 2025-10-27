@@ -43,12 +43,16 @@ class ConversationRepository {
         });
     }
     async updateConversationProject(conversation_id: string, project_id: string): Promise<Conversation | null> {
+        console.log(`📝 [Backend] Updating conversation ${conversation_id} to project ${project_id}`);
         const [updatedRows] = await Conversation.update(
             { project_id },
             { where: { id: conversation_id } }
         );
+        console.log(`✅ [Backend] Updated ${updatedRows} row(s)`);
         if (updatedRows === 0) return null;
-        return this.getConversationById(conversation_id);
+        const updated = await this.getConversationById(conversation_id);
+        console.log(`✅ [Backend] Conversation now has project_id:`, updated?.project_id);
+        return updated;
     }
 }
 export default new ConversationRepository();

@@ -7,13 +7,15 @@ import conversationService from '../../services/conversation.service';
 interface DragAndDropProviderProps {
   children: React.ReactNode;
   onConversationMoved?: (conversationId: string, projectId: string) => void;
-  onProjectUpdate?: (projectId: string) => Promise<void>; 
+  onProjectUpdate?: (projectId: string) => Promise<void>;
+  onRefreshAllProjects?: () => Promise<void>; // ✅ New: refresh all expanded projects
 }
 
 const DragAndDropProvider: React.FC<DragAndDropProviderProps> = ({ 
   children, 
   onConversationMoved,
   onProjectUpdate,
+  onRefreshAllProjects, // ✅ New callback
 }) => {
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -39,31 +41,66 @@ const DragAndDropProvider: React.FC<DragAndDropProviderProps> = ({
 
       const conversationId = draggedConversation.id;
       const projectId = targetProject.id;
+      const sourceProjectId = draggedConversation.project_id; // ✅ Get source project before moving
+
+      console.log('🔍 Drag details:', {
+        conversationId,
+        conversationTitle: draggedConversation.title,
+        sourceProjectId,
+        targetProjectId: projectId,
+        fullConversation: draggedConversation
+      });
+
+      // ✅ Check if trying to move to same project
+      if (sourceProjectId === projectId) {
+        console.log('ℹ️ Conversation already in this project');
+        message.info('Conversation is already in this project');
+        return;
+      }
 
       console.log(`📌 Moving conversation "${draggedConversation.title}" to project "${targetProject.project_name}"`);
+      if (sourceProjectId) {
+        console.log(`   From project: ${sourceProjectId}`);
+      }
 
       try {
         // Call API to update conversation's project
-        await conversationService.updateConversationProject(conversationId, projectId);
+        const updatedConversation = await conversationService.updateConversationProject(conversationId, projectId);
+        
+        console.log('✅ API response - updated conversation:', updatedConversation);
 
         message.success(
           `Moved "${draggedConversation.title}" to project "${targetProject.project_name}"`
         );
 
-        // ✅ Refresh project conversations immediately
-        if (onProjectUpdate) {
-          await onProjectUpdate(projectId);
-        }
-
-        // Notify parent to refresh conversation list
+        // ✅ First, notify parent to refresh conversation list (this updates the conversation data)
         onConversationMoved?.(conversationId, projectId);
+
+        // ✅ Refresh ALL expanded projects (simple and effective!)
+        if (onRefreshAllProjects) {
+          console.log('🔄 Refreshing ALL expanded projects to ensure sync...');
+          await onRefreshAllProjects();
+        } else if (onProjectUpdate) {
+          // Fallback: refresh specific projects
+          console.log('🔄 Refreshing target project:', projectId);
+          await onProjectUpdate(projectId);
+          
+          if (sourceProjectId && sourceProjectId !== projectId) {
+            console.log('🔄 Refreshing source project:', sourceProjectId);
+            await onProjectUpdate(sourceProjectId);
+          } else if (!sourceProjectId) {
+            console.log('ℹ️ No source project to refresh (moved from main list)');
+          } else {
+            console.log('ℹ️ Source and target are the same project');
+          }
+        }
       } catch (error) {
         console.error('Failed to move conversation:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to move conversation to project';
         message.error(errorMessage);
       }
     },
-    [onConversationMoved, onProjectUpdate]
+    [onConversationMoved, onProjectUpdate, onRefreshAllProjects]
   );
 
   return (

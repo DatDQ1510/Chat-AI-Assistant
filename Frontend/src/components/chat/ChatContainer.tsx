@@ -443,10 +443,11 @@ const ChatContainer: React.FC = () => {
   }), []);
 
   // Handle conversation moved to project
-  const handleConversationMoved = useCallback((conversationId: string, projectId: string) => {
+  const handleConversationMoved = useCallback(async (conversationId: string, projectId: string) => {
     console.log(`✅ Conversation ${conversationId} moved to project ${projectId}`);
     // Reload conversations to reflect the change
-    loadConversations({ page: 1, append: false, manageLoading: false });
+    await loadConversations({ page: 1, append: false, manageLoading: false });
+    console.log('✅ Conversation list reloaded after move');
   }, [loadConversations]);
 
   // ✅ Handle project update - Refresh project conversations immediately
@@ -485,10 +486,19 @@ const ChatContainer: React.FC = () => {
     }
   }, [handleRenameConversation]);
 
+  // ✅ Refresh all expanded projects
+  const handleRefreshAllProjects = useCallback(async () => {
+    console.log('🔄 ChatContainer: Refreshing all projects...');
+    if (chatSidebarRef.current) {
+      await chatSidebarRef.current.refreshAllProjects();
+    }
+  }, []);
+
   return (
     <DragAndDropProvider 
       onConversationMoved={handleConversationMoved}
       onProjectUpdate={handleProjectUpdate}
+      onRefreshAllProjects={handleRefreshAllProjects}
     >
       <div style={styles.page}>
       {/* Fixed Sidebar on Left */}
