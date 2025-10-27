@@ -30,11 +30,25 @@ class ConversationRepository {
         );
     }
 
-    async updateConversation(id: string, conversation_name: string): Promise<void> {
+    async updateConversation(id: string, conversation_name?: string): Promise<void> {
         await Conversation.update(
             { conversation_name },
             { where: { id } }
         );
+    }
+
+    async getConversationByProjectId(project_id: string): Promise<Conversation[] | null> {
+        return Conversation.findAll({
+            where: { project_id }
+        });
+    }
+    async updateConversationProject(conversation_id: string, project_id: string): Promise<Conversation | null> {
+        const [updatedRows] = await Conversation.update(
+            { project_id },
+            { where: { id: conversation_id } }
+        );
+        if (updatedRows === 0) return null;
+        return this.getConversationById(conversation_id);
     }
 }
 export default new ConversationRepository();

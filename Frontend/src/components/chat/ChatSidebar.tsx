@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, Button, Typography, Empty, Avatar, Divider, Spin } from 'antd';
 import {
   PlusOutlined,
@@ -7,7 +7,9 @@ import {
   SettingOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import ConversationItem from './ConversationItem';
+import DraggableConversationItem from './DraggableConversationItem';
+import ProjectSidebar from './ProjectSidebar';
+import type { ProjectSidebarRef } from './ProjectSidebar'; // ✅ Type-only import
 import type { Conversation } from '../../types/chat';
 
 const { Title, Text } = Typography;
@@ -29,7 +31,12 @@ interface ChatSidebarProps {
   isLoadingMore?: boolean;
 }
 
-const ChatSidebar: React.FC<ChatSidebarProps> = ({
+// ✅ Export ref type
+export interface ChatSidebarRef {
+  refreshProject: (projectId: string) => Promise<void>;
+}
+
+const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
   conversations,
   currentConversationId,
   onNewConversation,
@@ -44,9 +51,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onLoadMore,
   hasMore = false,
   isLoadingMore = false,
-}) => {
+}, ref) => {
 
   const listRef = useRef<HTMLDivElement>(null);
+  const projectSidebarRef = useRef<ProjectSidebarRef>(null); // ✅ Ref for ProjectSidebar
+  
+  // ✅ Expose methods to parent
+  useImperativeHandle(ref, () => ({
+    refreshProject: async (projectId: string) => {
+      if (projectSidebarRef.current) {
+        await projectSidebarRef.current.refreshProject(projectId);
+      }
+    },
+  }), []);
   // Handle scroll to load more conversations
   useEffect(() => {
     const listElement = listRef.current;
@@ -88,19 +105,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      gap: 18,
-      padding: 20,
+      gap: 12, // ✅ Reduced from 18
+      padding: 16, // ✅ Reduced from 20
     } as React.CSSProperties,
     header: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 16,
+      gap: 12, // ✅ Reduced from 16
     } as React.CSSProperties,
     headerInfo: {
       display: 'flex',
       alignItems: 'center',
-      gap: 14,
+      gap: 10, // ✅ Reduced from 14
       flex: 1,
       minWidth: 0,
     } as React.CSSProperties,
@@ -114,35 +131,38 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       margin: 0,
       color: '#0f172a',
       lineHeight: 1.2,
+      fontSize: 15, // ✅ Added consistent size
     } as React.CSSProperties,
     subtitle: {
       color: '#64748b',
-      fontSize: 16,
+      fontSize: 13, // ✅ Reduced from 16
     } as React.CSSProperties,
     newChatButton: {
-      borderRadius: 20,
-      height: 60,
+      borderRadius: 8, // ✅ Reduced from 20 for consistency
+      height: 40, // ✅ Reduced from 60
       fontWeight: 600,
+      fontSize: 14, // ✅ Added
     } as React.CSSProperties,
     searchInput: {
-      borderRadius: 20,
-      height: 60,
+      borderRadius: 8, // ✅ Reduced from 20
+      height: 40, // ✅ Reduced from 60
     } as React.CSSProperties,
     list: {
       flex: 1,
       overflowY: 'auto',
       display: 'flex',
       flexDirection: 'column',
-      gap: 15,
-      paddingRight: 10,
+      gap: 8, // ✅ Reduced from 15
+      paddingRight: 8, // ✅ Reduced from 10
     } as React.CSSProperties,
     footer: {
       display: 'grid',
-      gap: 20,
+      gap: 12, // ✅ Reduced from 20
     } as React.CSSProperties,
     footerButton: {
-      borderRadius: 20,
-      height: 60,
+      borderRadius: 8, // ✅ Reduced from 20
+      height: 40, // ✅ Reduced from 60
+      fontSize: 14, // ✅ Added
     } as React.CSSProperties,
   };
 
@@ -155,9 +175,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       <div style={styles.header}>
         <div style={styles.headerInfo}>
           <Avatar
-            size={52}
+            size={40} // ✅ Reduced from 52
             icon={!userName && !userEmail ? <UserOutlined /> : undefined}
-            style={{ background: '#6366f1', fontWeight: 600 }}
+            style={{ background: '#6366f1', fontWeight: 600, fontSize: 16 }}
           >
             {userName || userEmail ? initials : undefined}
           </Avatar>
@@ -198,13 +218,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </Button>
       )}
 
+      {/* ✅ Project Sidebar - Below Search Button */}
+      <ProjectSidebar 
+        ref={projectSidebarRef} 
+        currentConversationId={currentConversationId} 
+      />
+
       <Divider style={{ margin: '0' }} />
 
       <div style={styles.list} ref={listRef}>
         {conversations.length ? (
           <>
             {conversations.map((conversation) => (
-              <ConversationItem
+              <DraggableConversationItem
                 key={conversation.id}
                 conversation={conversation}
                 isActive={conversation.id === currentConversationId}
@@ -245,6 +271,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       </div>
     </Card>
   );
-};
+});
+
+ChatSidebar.displayName = 'ChatSidebar';
 
 export default ChatSidebar;

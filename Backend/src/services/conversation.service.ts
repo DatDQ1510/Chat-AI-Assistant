@@ -20,8 +20,15 @@ class ConversationService {
         return this.conversationRepository.deleteConversation(id);
     }
 
-    async updateConversation(id: string, conversation_name: string) {
+    async updateConversation(id: string, conversation_name?: string) {
         return this.conversationRepository.updateConversation(id, conversation_name);
+    }
+
+    async getConversationByProjectId(project_id: string) {
+        return this.conversationRepository.getConversationByProjectId(project_id);
+    }
+    async updateConversationProject(conversation_id: string, project_id: string) {
+        return this.conversationRepository.updateConversationProject(conversation_id, project_id);
     }
 }
 

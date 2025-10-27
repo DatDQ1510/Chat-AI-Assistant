@@ -29,9 +29,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       container: {
         display: 'flex',
         alignItems: 'center',
-        gap: 15,
-        padding: isCompact ? 8 : '12px 14px',
-        borderRadius: isCompact ? 10 : 14,
+        gap: 10, // ✅ Reduced from 15
+        padding: isCompact ? 6 : '8px 10px', // ✅ Reduced padding
+        borderRadius: isCompact ? 8 : 10, // ✅ Reduced from 10/14
         cursor: 'pointer',
         border: `1px solid ${isActive ? `${activeAccent}33` : 'transparent'}`,
         backgroundColor: isActive ? `${activeAccent}10` : 'transparent',
@@ -43,12 +43,12 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: isCompact ? 'center' : 'flex-start',
-        gap: isCompact ? 0 : 12,
+        gap: isCompact ? 0 : 10, // ✅ Reduced from 12
         flex: isCompact ? '0 0 auto' : 1,
         width: isCompact ? '100%' : 'auto',
       } as React.CSSProperties,
       icon: {
-        fontSize: isCompact ? 22 : 10,
+        fontSize: isCompact ? 20 : 16, // ✅ Reduced from 22/10
         color: isActive ? activeAccent : '#94a3b8',
         marginTop: isCompact ? 0 : 2,
       } as React.CSSProperties,
@@ -60,17 +60,17 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         display: isCompact ? 'none' : 'flex',
       } as React.CSSProperties,
       title: {
-        fontWeight: 750,
-        fontSize: 18,
+        fontWeight: 600, // ✅ Reduced from 750
+        fontSize: 14, // ✅ Reduced from 18
         color: '#1f2937',
       } as React.CSSProperties,
       date: {
-        fontSize: 16,
+        fontSize: 12, // ✅ Reduced from 16
         color: '#64748b',
       } as React.CSSProperties,
       menuButton: {
-        fontSize: 20,
-        borderRadius: 10,
+        fontSize: 16, // ✅ Reduced from 20
+        borderRadius: 8, // ✅ Reduced from 10
         color: '#82abe3ff',
         display: isCompact ? 'none' : 'inline-flex',
       } as React.CSSProperties,

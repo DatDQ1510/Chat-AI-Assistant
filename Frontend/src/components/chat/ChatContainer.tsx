@@ -3,6 +3,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Typography, message, Spin, Button, Space } from 'antd';
 import { LoadingOutlined, StarFilled } from '@ant-design/icons';
 import ChatSidebar from './ChatSidebar';
+import type { ChatSidebarRef } from './ChatSidebar';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput'; // ✅ Import component
 import type { ChatInputRef } from './ChatInput'; // ✅ Import ref type
@@ -10,6 +11,7 @@ import SearchModal from './SearchModal';
 import ImportantDrawer from './ImportantDrawer';
 import SemanticChatDrawer from './SemanticChatDrawer';
 import SelectionPopover from './SelectionPopover'; // ✅ New component
+import DragAndDropProvider from './DragAndDropProvider'; // ✅ Drag & Drop
 import type { Conversation, ChatState, Message } from '../../types/chat';
 import { useAuth } from '../../contexts/AuthContext';
 // import conversationService from '../../services/conversation.service'; // Now used by useConversations hook
@@ -31,6 +33,7 @@ const ChatContainer: React.FC = () => {
   
   // ✅ Create ref để control ChatInput
   const chatInputRef = useRef<ChatInputRef>(null);
+  const chatSidebarRef = useRef<ChatSidebarRef>(null); // ✅ Ref for ChatSidebar
   
   const [chatState, setChatState] = useState<ChatState>({
     conversations: [],
@@ -438,11 +441,31 @@ const ChatContainer: React.FC = () => {
     } as React.CSSProperties,
   }), []);
 
+  // Handle conversation moved to project
+  const handleConversationMoved = useCallback((conversationId: string, projectId: string) => {
+    console.log(`✅ Conversation ${conversationId} moved to project ${projectId}`);
+    // Reload conversations to reflect the change
+    loadConversations({ page: 1, append: false, manageLoading: false });
+  }, [loadConversations]);
+
+  // ✅ Handle project update - Refresh project conversations immediately
+  const handleProjectUpdate = useCallback(async (projectId: string) => {
+    console.log(`🔄 Refreshing project ${projectId} conversations...`);
+    if (chatSidebarRef.current) {
+      await chatSidebarRef.current.refreshProject(projectId);
+    }
+  }, []);
+
   return (
-    <div style={styles.page}>
+    <DragAndDropProvider 
+      onConversationMoved={handleConversationMoved}
+      onProjectUpdate={handleProjectUpdate}
+    >
+      <div style={styles.page}>
       {/* Fixed Sidebar on Left */}
       <div style={styles.sidebar}>
         <ChatSidebar
+          ref={chatSidebarRef}
           conversations={chatState.conversations}
           currentConversationId={chatState.currentConversationId}
           onNewConversation={handleNewConversation}
@@ -553,7 +576,8 @@ const ChatContainer: React.FC = () => {
 
       {/* ✅ Text Selection Popover - Ask AI about selected text */}
       <SelectionPopover onAskAI={handleAskAIAboutSelection} />
-    </div>
+      </div>
+    </DragAndDropProvider>
   );
 };
 

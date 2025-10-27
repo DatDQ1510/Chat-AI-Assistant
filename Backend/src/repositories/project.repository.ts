@@ -1,20 +1,19 @@
 import { Project } from "../models/project.model";
 
 class ProjectRepository {
-    async createProject(user_id: string, project_name: string): Promise<Project> {
+    async createProject(user_id: string, project_name: string, description?: string | null): Promise<Project> {
         const project = await Project.create({
             user_id,
-            project_name
+            project_name,
+            description
         });
         return project;
     }
 
-    async getProjectsByUserId(user_id: string, limit: number, offset: number): Promise<{ rows: Project[]; count: number }> {
-        return Project.findAndCountAll({
+    async getProjectsByUserId(user_id: string): Promise<Project[]> {
+        return Project.findAll({
             where: { user_id },
             order: [["updatedAt", "DESC"]],
-            limit,
-            offset,
             attributes: ["project_name", "id", "createdAt", "updatedAt", "user_id"],
         });
     }

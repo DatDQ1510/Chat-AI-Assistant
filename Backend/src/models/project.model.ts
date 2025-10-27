@@ -5,6 +5,7 @@ import { User } from "./user.model.js";
 interface ProjectAttributes {
   id: string;
   project_name: string;
+  description?: string | null;
   user_id: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -16,6 +17,7 @@ export class Project extends Model<ProjectAttributes, ProjectCreationAttributes>
   implements ProjectAttributes {
   public id!: string;
   public project_name!: string;
+  public description?: string | null;
   public user_id!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -32,6 +34,10 @@ Project.init(
     project_name: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
     user_id: {
       type: DataTypes.UUID,

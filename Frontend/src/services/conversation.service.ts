@@ -8,7 +8,7 @@ type ApiResponse<T> = {
 };
 
 type ConversationDto = {
-	id: number;
+	id: string;
 	conversation_name: string;
 	user_id?: string;
 	createdAt?: string;
@@ -91,10 +91,22 @@ const deleteConversation = async (id: string | number) => {
 	await axiosClient.delete<ApiResponse<null>>(`v1/api/conversations/${id}`);
 };
 
+/**
+ * Update conversation's project
+ */
+const updateConversationProject = async (conversationId: string, projectId: string | null): Promise<Conversation> => {
+	const response = await axiosClient.patch<ApiResponse<ConversationDto>>(
+		`v1/api/conversations/${conversationId}/project`,
+		{ project_id: projectId }
+	);
+	return mapConversation(response.data.data);
+};
+
 export default {
 	getUserConversations,
 	getConversation,
 	createConversation,
 	renameConversation,
 	deleteConversation,
+	updateConversationProject,
 };

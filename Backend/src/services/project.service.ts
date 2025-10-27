@@ -5,8 +5,8 @@ class ProjectService {
         return projectRepository.createProject(user_id, project_name);
     }
 
-    async getProjectsByUserId(user_id: string, limit: number, offset: number) {
-        return projectRepository.getProjectsByUserId(user_id, limit, offset);
+    async getProjectsByUserId(user_id: string) {
+        return projectRepository.getProjectsByUserId(user_id);
     }
 
     async deleteProject(user_id: string, project_id: string) {

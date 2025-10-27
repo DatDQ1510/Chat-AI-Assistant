@@ -59,3 +59,24 @@ export interface ConversationItemProps {
   onRename?: (id: string, newTitle: string) => void;
   isCompact?: boolean;
 }
+
+// ✅ Project types
+export interface Project {
+  id: string;
+  project_name: string;
+  description?: string;
+  user_id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  conversations?: Conversation[];
+}
+
+export interface ProjectItemProps {
+  project: Project;
+  isExpanded: boolean;
+  onToggle: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onRename?: (id: string, newName: string) => void;
+  onConversationClick?: (conversationId: string) => void;
+  currentConversationId?: string | null;
+}

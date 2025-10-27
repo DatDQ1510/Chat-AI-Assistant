@@ -10,6 +10,7 @@ import uploadRoutes from "./routes/upload.route.js";
 import { authenticate } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import openAI  from "./config/openai.js";
+import projectRoutes from "./routes/project.routes.js";
 dotenv.config();
 
 const app = express();
@@ -28,6 +29,8 @@ app.use("/v1/api/auth", authRoutes);
 
 // Protected routes
 app.use(authenticate);
+
+app.use("/v1/api/projects", projectRoutes);
 app.use("/v1/api/users", userRoutes);
 app.use("/v1/api/conversations", conversationRoutes);
 app.use("/v1/api/messages", messageRoutes);
