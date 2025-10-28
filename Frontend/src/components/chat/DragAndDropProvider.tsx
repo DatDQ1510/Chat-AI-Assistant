@@ -25,35 +25,80 @@ const DragAndDropProvider: React.FC<DragAndDropProviderProps> = ({
 
       const draggedConversation = active.data.current?.conversation;
       const targetProject = over.data.current?.project;
+      const targetType = over.data.current?.type;
 
-      // Validate: only allow conversation → project drops
-      if (
-        active.data.current?.type !== 'conversation' ||
-        over.data.current?.type !== 'project'
-      ) {
+      // Validate drag type
+      if (active.data.current?.type !== 'conversation') {
         return;
       }
 
-      if (!draggedConversation || !targetProject) {
-        console.error('Invalid drag data:', { draggedConversation, targetProject });
+      if (!draggedConversation) {
+        console.error('Invalid drag data: no conversation');
         return;
       }
 
       const conversationId = draggedConversation.id;
-      const projectId = targetProject.id;
-      const sourceProjectId = draggedConversation.project_id; // ✅ Get source project before moving
+      const sourceProjectId = draggedConversation.project_id;
 
-      console.log('🔍 Drag details:', {
+      console.log('🔍 Drag start - Conversation state:', {
         conversationId,
-        conversationTitle: draggedConversation.title,
-        sourceProjectId,
-        targetProjectId: projectId,
-        fullConversation: draggedConversation
+        title: draggedConversation.title,
+        sourceProjectId: sourceProjectId || 'main list',
+        targetType,
       });
 
-      // ✅ Check if trying to move to same project
-      if (sourceProjectId === projectId) {
-        console.log('ℹ️ Conversation already in this project');
+      // Case 1: Drop into conversations-list (unlink from project)
+      if (targetType === 'conversations-list') {
+        // Already in main list (no project) - check if sourceProjectId is null/undefined
+        if (!sourceProjectId || sourceProjectId === null) {
+          console.log('ℹ️ Conversation is already in main list');
+          message.info('Conversation is already in main list');
+          return;
+        }
+
+        console.log(`📤 Unlinking conversation "${draggedConversation.title}" from project ${sourceProjectId}`);
+
+        try {
+          // Set project_id to null
+          await conversationService.updateConversationProject(conversationId, null);
+          
+          message.success(`Moved "${draggedConversation.title}" to main list`);
+
+          // Notify parent to refresh
+          onConversationMoved?.(conversationId, ''); // Empty string for null project
+
+          // Refresh all projects to remove conversation from old project
+          if (onRefreshAllProjects) {
+            console.log('🔄 Refreshing all projects after unlinking...');
+            await onRefreshAllProjects();
+          } else if (onProjectUpdate && sourceProjectId) {
+            console.log('🔄 Refreshing source project:', sourceProjectId);
+            await onProjectUpdate(sourceProjectId);
+          }
+        } catch (error) {
+          console.error('Failed to unlink conversation:', error);
+          message.error('Failed to move conversation to main list');
+        }
+        return;
+      }
+
+      // Case 2: Drop into project
+      if (targetType !== 'project' || !targetProject) {
+        return;
+      }
+
+      const projectId = targetProject.id;
+
+      console.log('🔍 Drag to project - Details:', {
+        conversationId,
+        conversationTitle: draggedConversation.title,
+        sourceProjectId: sourceProjectId || 'main list',
+        targetProjectId: projectId,
+      });
+
+      // ✅ Check if trying to move to same project (both must have values and be equal)
+      if (sourceProjectId && sourceProjectId === projectId) {
+        console.log('ℹ️ Conversation is already in this project');
         message.info('Conversation is already in this project');
         return;
       }

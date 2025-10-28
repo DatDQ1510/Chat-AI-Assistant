@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import React, { useState, useRef, useCallback } from 'react';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { List, Typography, Tooltip, Button, Dropdown, Input, Modal, Spin } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -9,13 +10,15 @@ import {
   EllipsisOutlined,
   EditOutlined,
   DeleteOutlined,
-  MessageOutlined,
 } from '@ant-design/icons';
 import type { ProjectItemProps } from '../../types/chat';
+import DraggableProjectConversationItem from './DraggableProjectConversationItem';
 
 const { Text } = Typography;
 
-const DroppableProjectItem: React.FC<ProjectItemProps> = ({
+const DRAG_THRESHOLD = 5; // Simple threshold như conversation
+
+const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
   project,
   isExpanded,
   onToggle,
@@ -27,15 +30,82 @@ const DroppableProjectItem: React.FC<ProjectItemProps> = ({
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(project.project_name);
   const [loading, setLoading] = useState(false);
+  
+  // Simple drag state for project header
+  const [isDragActive, setIsDragActive] = useState(false);
+  const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
+  const hasMovedRef = useRef(false);
 
-  // Setup droppable zone
-  const { setNodeRef, isOver } = useDroppable({
-    id: project.id,
+  // Setup droppable zone (for conversations to drop into)
+  const { setNodeRef: setDroppableRef, isOver: isDropOver } = useDroppable({
+    id: `project-drop-${project.id}`,
     data: {
       type: 'project',
       project,
     },
   });
+
+  // Setup draggable (for reordering projects)
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: `project-drag-${project.id}`,
+    data: {
+      type: 'project-reorder',
+      project,
+    },
+    disabled: !isDragActive || isExpanded, // Disable drag when expanded
+  });
+
+  // Combine refs
+  const setNodeRef = useCallback(
+    (node: HTMLElement | null) => {
+      setDroppableRef(node);
+      setDraggableRef(node);
+    },
+    [setDroppableRef, setDraggableRef]
+  );
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Ignore if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('.ant-dropdown-trigger') ||
+      target.closest('button') ||
+      target.closest('input') ||
+      target.closest('.project-toggle') ||
+      isExpanded
+    ) {
+      return;
+    }
+
+    mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
+    hasMovedRef.current = false;
+    setIsDragActive(false);
+  }, [isExpanded]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!mouseDownPosRef.current || hasMovedRef.current || isExpanded) return;
+
+    const deltaX = Math.abs(e.clientX - mouseDownPosRef.current.x);
+    const deltaY = Math.abs(e.clientY - mouseDownPosRef.current.y);
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (distance > DRAG_THRESHOLD) {
+      hasMovedRef.current = true;
+      setIsDragActive(true);
+    }
+  }, [isExpanded]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragActive(false);
+    mouseDownPosRef.current = null;
+    hasMovedRef.current = false;
+  }, []);
 
   const handleRename = async () => {
     if (newName.trim() && newName !== project.project_name) {
@@ -83,49 +153,65 @@ const DroppableProjectItem: React.FC<ProjectItemProps> = ({
 
   const conversationCount = project.conversations?.length || 0;
 
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'default',
+    transition: isDragging ? 'none' : 'all 0.2s ease',
+    marginBottom: 4,
+  };
+
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        marginBottom: 4,
-      }}
-    >
+    <div ref={setNodeRef} style={style}>
       {/* Project Header */}
       <div
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        {...(isDragActive && !isExpanded ? { ...attributes, ...listeners } : {})}
         style={{
           display: 'flex',
           alignItems: 'center',
-          padding: '10px 14px', // ✅ Increased from 8px 12px
+          padding: '10px 14px',
           borderRadius: 8,
-          cursor: 'pointer',
           transition: 'all 0.2s',
-          background: isOver ? '#e6f4ff' : isExpanded ? '#f0f2f5' : 'transparent',
-          border: isOver ? '2px dashed #1677ff' : '2px solid transparent',
-          boxShadow: isOver ? '0 0 8px rgba(22, 119, 255, 0.3)' : 'none',
+          background: isDropOver
+            ? '#e6f4ff'
+            : isExpanded
+            ? '#f0f2f5'
+            : 'transparent',
+          border: isDropOver ? '2px dashed #1677ff' : '2px solid transparent',
+          boxShadow: isDropOver
+            ? '0 0 8px rgba(22, 119, 255, 0.3)'
+            : 'none',
         }}
         onMouseEnter={(e) => {
-          if (!isExpanded && !isOver) {
+          if (!isExpanded && !isDropOver && !isDragActive) {
             e.currentTarget.style.background = '#f5f5f5';
           }
         }}
         onMouseLeave={(e) => {
-          if (!isExpanded && !isOver) {
+          if (!isExpanded && !isDropOver && !isDragActive) {
             e.currentTarget.style.background = 'transparent';
           }
+          // Also handle mouse up when leaving
+          handleMouseUp();
         }}
       >
         {/* Toggle Icon */}
         <div
+          className="project-toggle"
           onClick={() => onToggle(project.id)}
           style={{
-            marginRight: 10, // ✅ Increased from 8
+            marginRight: 10,
             display: 'flex',
             alignItems: 'center',
             transition: 'transform 0.2s',
+            cursor: 'pointer',
           }}
         >
           {isExpanded ? (
-            <DownOutlined style={{ fontSize: 14, color: '#8c8c8c' }} /> 
+            <DownOutlined style={{ fontSize: 14, color: '#8c8c8c' }} />
           ) : (
             <RightOutlined style={{ fontSize: 14, color: '#8c8c8c' }} />
           )}
@@ -134,17 +220,18 @@ const DroppableProjectItem: React.FC<ProjectItemProps> = ({
         {/* Folder Icon */}
         <FolderOutlined
           style={{
-            fontSize: 18, // ✅ Increased from 16
-            color: isOver ? '#1677ff' : '#faad14',
-            marginRight: 10, // ✅ Increased from 8
+            fontSize: 18,
+            color: isDropOver ? '#1677ff' : '#faad14',
+            marginRight: 10,
             transition: 'color 0.2s',
+            cursor: 'pointer',
           }}
           onClick={() => onToggle(project.id)}
         />
 
         {/* Project Name */}
         <div
-          style={{ flex: 1, minWidth: 0 }}
+          style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
           onClick={() => onToggle(project.id)}
         >
           {isRenaming ? (
@@ -164,8 +251,8 @@ const DroppableProjectItem: React.FC<ProjectItemProps> = ({
               <Text
                 strong
                 style={{
-                  fontSize: 15, // ✅ Increased from 14
-                  color: isOver ? '#1677ff' : '#262626',
+                  fontSize: 15,
+                  color: isDropOver ? '#1677ff' : '#262626',
                   display: 'block',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -180,10 +267,10 @@ const DroppableProjectItem: React.FC<ProjectItemProps> = ({
         </div>
 
         {/* Drop Indicator */}
-        {isOver && (
+        {isDropOver && (
           <Text
             style={{
-              fontSize: 14, 
+              fontSize: 14,
               color: '#1677ff',
               marginLeft: 8,
               marginRight: 4,
@@ -196,11 +283,11 @@ const DroppableProjectItem: React.FC<ProjectItemProps> = ({
         )}
 
         {/* Conversation Count Badge */}
-        {!isOver && conversationCount > 0 && (
+        {!isDropOver && conversationCount > 0 && (
           <Text
             type="secondary"
             style={{
-              fontSize: 14, // ✅ Increased from 11
+              fontSize: 14,
               marginLeft: 8,
               marginRight: 4,
               color: '#2a0202ff',
@@ -214,7 +301,11 @@ const DroppableProjectItem: React.FC<ProjectItemProps> = ({
         )}
 
         {/* Menu Dropdown */}
-        <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+        <Dropdown
+          menu={{ items: menuItems }}
+          trigger={['click']}
+          placement="bottomRight"
+        >
           <Button
             type="text"
             size="small"
@@ -246,50 +337,23 @@ const DroppableProjectItem: React.FC<ProjectItemProps> = ({
               size="small"
               dataSource={project.conversations}
               renderItem={(conversation) => (
-                <List.Item
+                <DraggableProjectConversationItem
                   key={conversation.id}
-                  onClick={() => onConversationClick?.(conversation.id)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    background: currentConversationId === conversation.id ? '#e6f4ff' : 'transparent',
-                    border: currentConversationId === conversation.id ? '1px solid #91caff' : '1px solid transparent',
-                    marginBottom: 2,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentConversationId !== conversation.id) {
-                      e.currentTarget.style.background = '#f5f5f5';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentConversationId !== conversation.id) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', minWidth: 0 }}>
-                    <MessageOutlined style={{ fontSize: 15, color: '#8c8c8c', marginRight: 8, flexShrink: 0 }} />
-                    <Tooltip title={conversation.title} placement="right">
-                      <Text
-                        style={{
-                          fontSize: 15,
-                          color: currentConversationId === conversation.id ? '#1677ff' : '#7d7b7bff',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {conversation.title}
-                      </Text>
-                    </Tooltip>
-                  </div>
-                </List.Item>
+                  conversation={conversation}
+                  isActive={currentConversationId === conversation.id}
+                  onClick={onConversationClick || (() => {})}
+                />
               )}
             />
           ) : (
-            <div style={{ textAlign: 'center', padding: '12px 0', color: '#8c8c8c', fontSize: 12 }}>
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '12px 0',
+                color: '#8c8c8c',
+                fontSize: 12,
+              }}
+            >
               No conversations yet
             </div>
           )}
@@ -323,4 +387,4 @@ const DroppableProjectItem: React.FC<ProjectItemProps> = ({
   );
 };
 
-export default DroppableProjectItem;
+export default DraggableDroppableProjectItem;

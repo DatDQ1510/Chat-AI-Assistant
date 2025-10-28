@@ -16,8 +16,6 @@ type MessageDto = {
 	content: string;
 	createdAt?: string;
 	updatedAt?: string;
-	createdAt?: string;
-	updatedAt?: string;
 	important?: boolean; // ✅ Add important field
 	file_urls?: string[]; // ✅ Attached file URLs
 };

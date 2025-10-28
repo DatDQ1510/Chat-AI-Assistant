@@ -28,7 +28,7 @@ class ConversationService {
         return this.conversationRepository.getConversationByProjectId(project_id);
     }
 
-    async updateConversationProject(conversation_id: string, project_id: string) {
+    async updateConversationProject(conversation_id: string, project_id: string | null) {
         return this.conversationRepository.updateConversationProject(conversation_id, project_id);
     }
 

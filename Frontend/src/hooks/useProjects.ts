@@ -103,12 +103,18 @@ export const useProjects = (): UseProjectsReturn => {
       const conversations = await projectService.getConversationsByProjectId(projectId);
       console.log(`✅ Fetched ${conversations.length} conversations for project ${projectId}`);
       
+      // ✅ IMPORTANT: Ensure each conversation has project_id set correctly
+      const conversationsWithProjectId = conversations.map(conv => ({
+        ...conv,
+        project_id: projectId, // Explicitly set project_id for drag & drop validation
+      }));
+      
       // Update project with conversations
       setProjects((prev) =>
-        prev.map((p) => (p.id === projectId ? { ...p, conversations } : p))
+        prev.map((p) => (p.id === projectId ? { ...p, conversations: conversationsWithProjectId } : p))
       );
       
-      return conversations;
+      return conversationsWithProjectId;
     } catch (error) {
       console.error('Failed to fetch project conversations:', error);
       antMessage.error('Failed to load conversations');

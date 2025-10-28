@@ -43,8 +43,8 @@ class ConversationRepository {
             where: { project_id }
         });
     }
-    async updateConversationProject(conversation_id: string, project_id: string): Promise<Conversation | null> {
-        console.log(`📝 [Backend] Updating conversation ${conversation_id} to project ${project_id}`);
+    async updateConversationProject(conversation_id: string, project_id: string | null): Promise<Conversation | null> {
+        console.log(`📝 [Backend] Updating conversation ${conversation_id} to project ${project_id || 'null (unlink)'}`);
         const [updatedRows] = await Conversation.update(
             { project_id },
             { where: { id: conversation_id } }

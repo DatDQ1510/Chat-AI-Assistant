@@ -7,7 +7,7 @@ import {
   FolderOutlined,
 } from '@ant-design/icons';
 import { useProjects } from '../../hooks/useProjects';
-import DroppableProjectItem from './DroppableProjectItem';
+import DraggableDroppableProjectItem from './DraggableDroppableProjectItem'; // ✅ New component with drag support
 import { useNavigate } from 'react-router-dom';
 
 const { Text } = Typography;
@@ -143,7 +143,7 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
         <Text
           strong
           style={{
-            fontSize: 16,
+            fontSize: 18,
             color: '#262626',
             flex: 1,
           }}
@@ -156,10 +156,10 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
           <div
             style={{
               background: '#e6f4ff',
-              color: '#1677ff',
+              color: '#2d83faff',
               borderRadius: 10,
               padding: '3px 10px',
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: 500,
             }}
           >
@@ -223,7 +223,7 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
             /* Projects List */
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
               {projects.map((project) => (
-                <DroppableProjectItem
+                <DraggableDroppableProjectItem
                   key={project.id}
                   project={project}
                   isExpanded={expandedProjects.has(project.id)}

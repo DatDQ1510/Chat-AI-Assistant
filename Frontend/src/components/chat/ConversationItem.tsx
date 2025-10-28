@@ -65,7 +65,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       } as React.CSSProperties,
       title: {
         fontWeight: 600, // ✅ Reduced from 750
-        fontSize: 14, // ✅ Reduced from 18
+        fontSize: 16, // ✅ Reduced from 18
         color: '#1f2937',
       } as React.CSSProperties,
       date: {

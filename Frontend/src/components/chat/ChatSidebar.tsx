@@ -7,6 +7,7 @@ import {
   SettingOutlined,
   UserOutlined,
 } from '@ant-design/icons';
+import { useDroppable } from '@dnd-kit/core';
 import DraggableConversationItem from './DraggableConversationItem';
 import ProjectSidebar from './ProjectSidebar';
 import type { ProjectSidebarRef } from './ProjectSidebar'; // ✅ Type-only import
@@ -58,6 +59,14 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
 
   const listRef = useRef<HTMLDivElement>(null);
   const projectSidebarRef = useRef<ProjectSidebarRef>(null); // ✅ Ref for ProjectSidebar
+  
+  // ✅ Make conversations list a droppable zone to unlink from projects
+  const { setNodeRef: setDroppableRef, isOver: isDropOver } = useDroppable({
+    id: 'main-conversations-list',
+    data: {
+      type: 'conversations-list', // Special type to unlink conversations
+    },
+  });
   
   // ✅ Expose methods to parent
   useImperativeHandle(ref, () => ({
@@ -235,7 +244,21 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
 
       <Divider style={{ margin: '0' }} />
 
-      <div style={styles.list} ref={listRef}>
+      <div 
+        style={{
+          ...styles.list,
+          border: isDropOver ? '2px dashed #1677ff' : '2px solid transparent',
+          background: isDropOver ? '#e6f4ff' : 'transparent',
+          transition: 'all 0.2s ease',
+        }} 
+        ref={(node) => {
+          // Combine refs
+          if (listRef) {
+            listRef.current = node;
+          }
+          setDroppableRef(node);
+        }}
+      >
         {conversations.length ? (
           <>
             {conversations.map((conversation) => (

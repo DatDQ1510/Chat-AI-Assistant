@@ -13,7 +13,7 @@ interface DraggableConversationItemProps {
   onUpdateTag?: (id: string, tag: string | null) => Promise<void>;
 }
 
-const DRAG_THRESHOLD = 10;
+const DRAG_THRESHOLD = 5; // Giảm xuống 5px để dễ drag hơn
 
 const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
   conversation,
@@ -37,6 +37,12 @@ const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
   });
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Ignore if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('.ant-dropdown-trigger') || target.closest('button') || target.closest('input')) {
+      return;
+    }
+
     mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
     hasMovedRef.current = false;
     setIsDragActive(false);
@@ -52,9 +58,8 @@ const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
     if (distance > DRAG_THRESHOLD) {
       hasMovedRef.current = true;
       setIsDragActive(true);
-      console.log('🎯 Drag activated for:', conversation.title);
     }
-  }, [conversation.title]);
+  }, []);
 
   const handleMouseUp = useCallback(() => {
     setIsDragActive(false);
@@ -71,7 +76,7 @@ const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    cursor: isDragging ? 'grabbing' : isDragActive ? 'grabbing' : 'pointer',
+    cursor: isDragging ? 'grabbing' : 'pointer',
     transition: 'opacity 0.2s ease',
     userSelect: 'none' as const,
   };

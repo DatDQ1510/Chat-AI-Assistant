@@ -22,6 +22,7 @@ class ProjectRepository {
         await Project.destroy(
             { where: { id: project_id, user_id } }
         );
+
     }
 
     async updateProject(user_id: string, project_id: string, project_name: string): Promise<Project | null> {
