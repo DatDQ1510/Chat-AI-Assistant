@@ -29,8 +29,8 @@ export class Message
   public chatbot_id!: string | null;
   public content!: string;
   public embedding!: number[] | null;
-  public createdAt!: Date;
-  public updatedAt!: Date;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
   public important!: boolean;
   public attachments!: object | null;
 }
@@ -83,7 +83,6 @@ Message.init(
     sequelize,
     tableName: "messages",
     timestamps: true,
-    underscored: true
   }
 );
 

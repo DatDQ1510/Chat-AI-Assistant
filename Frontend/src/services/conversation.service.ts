@@ -11,6 +11,8 @@ type ConversationDto = {
 	id: string;
 	conversation_name: string;
 	user_id?: string;
+	project_id?: string | null;
+	conversation_tag?: string | null;
 	createdAt?: string;
 	updatedAt?: string;
 };
@@ -29,6 +31,8 @@ const mapConversation = (dto: ConversationDto): Conversation => ({
 	id: String(dto.id),
 	title: dto.conversation_name ?? 'New chat',
 	user_id: dto.user_id ?? '',
+	project_id: dto.project_id ?? null,
+	conversation_tag: dto.conversation_tag ?? null,
 	createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(),
 	updatedAt: dto.updatedAt ? new Date(dto.updatedAt) : new Date(),
 });
@@ -102,6 +106,18 @@ const updateConversationProject = async (conversationId: string, projectId: stri
 	return mapConversation(response.data.data);
 };
 
+/**
+ * Update conversation's tag
+ */
+const updateConversationTag = async (conversationId: string, tag: string | null): Promise<Conversation> => {
+	console.log(`📝 [Service] Updating tag for conversation ${conversationId} to ${tag}`);
+	const response = await axiosClient.patch<ApiResponse<ConversationDto>>(
+		`v1/api/conversations/${conversationId}/tag`,
+		{ conversation_tag: tag }
+	);
+	return mapConversation(response.data.data);
+};
+
 export default {
 	getUserConversations,
 	getConversation,
@@ -109,4 +125,5 @@ export default {
 	renameConversation,
 	deleteConversation,
 	updateConversationProject,
+	updateConversationTag,
 };

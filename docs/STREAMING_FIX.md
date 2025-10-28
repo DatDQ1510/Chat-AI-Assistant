@@ -56,7 +56,7 @@ io.to(conversation_id).emit("ai_message_init", {
   conversation_id,
   role: "assistant",
   content: "",
-  created_at: new Date().toISOString(),
+  createdAt: new Date().toISOString(),
 });
 
 // 5. Stream AI response

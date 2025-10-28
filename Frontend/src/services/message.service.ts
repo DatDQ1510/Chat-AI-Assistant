@@ -14,8 +14,8 @@ type MessageDto = {
 	user_id?: string | null;
 	chatbot_id?: string | null;
 	content: string;
-	created_at?: string;
-	updated_at?: string;
+	createdAt?: string;
+	updatedAt?: string;
 	createdAt?: string;
 	updatedAt?: string;
 	important?: boolean; // ✅ Add important field
@@ -40,7 +40,7 @@ const mapMessage = (dto: MessageDto): Message => {
 		id: dto.id, // Already a string (UUID)
 		role: dto.sender_type === 'user' ? 'user' : 'assistant',
 		content: dto.content,
-		timestamp: new Date(dto.created_at || dto.createdAt || dto.updated_at || dto.updatedAt || new Date()), // ✅ Use created_at for sorting
+		timestamp: new Date(dto.createdAt || dto.createdAt || dto.updatedAt || dto.updatedAt || new Date()), // ✅ Use createdAt for sorting
 		important: dto.important || false, // ✅ Map important field
 		attachments: dto.file_urls && dto.file_urls.length > 0 ? dto.file_urls : undefined, // ✅ Map file URLs
 	};
@@ -136,8 +136,8 @@ interface SearchResultDto {
 	distance?: number; // Distance from query (lower = more relevant)
 	relevance_score?: number; // Relevance score from backend (0-1, higher = more relevant)
 	sender_type?: 'user' | 'chatbot';
-	created_at?: string;
-	updated_at?: string;
+	createdAt?: string;
+	updatedAt?: string;
 	important?: boolean;
 }
 
@@ -182,7 +182,7 @@ const semanticSearch = async (
 			conversation_title: undefined, // TODO: Get from conversations
 			relevance_score: result.relevance_score || (result.distance ? (1 - Math.min(result.distance / 2, 1)) : undefined),
 			role: result.sender_type === 'user' ? 'user' : 'assistant',
-			timestamp: new Date(result.created_at || result.updated_at || new Date()),
+			timestamp: new Date(result.createdAt || result.updatedAt || new Date()),
 			important: result.important || false,
 		}));
 		

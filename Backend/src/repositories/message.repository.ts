@@ -2,44 +2,56 @@ import { sequelize } from "../config/database.js";
 import { QueryTypes } from "sequelize";
 import { Conversation } from "../models/conversation.model.js";
 import { Message } from "../models/message.model.js";
+import { randomUUID } from "crypto";
 
 class MessageRepository {
   /**
    * Tạo message với embedding vector (::vector) và file attachments
    */
-  async createMessage(
+async createMessage(
     conversation_id: string,
     sender_type: "user" | "chatbot",
     user_id: string | null,
     chatbot_id: string | null,
     content: string,
     embedding: number[] | null,
-    file_urls?: string[] // ✅ Add file_urls parameter
+    file_urls?: string[]
   ) {
-    const formattedEmbedding = embedding ? `[${embedding.join(',')}]` : null;
-    
-    // ✅ Format attachments as JSONB
-    const attachments = file_urls && file_urls.length > 0 
-      ? JSON.stringify(file_urls) 
-      : null;
+    // ✅ Generate UUID bằng Node
+    const id = randomUUID();
 
+    // ✅ Format vector embedding
+    const formattedEmbedding = embedding ? `[${embedding.join(",")}]` : null;
+
+    // ✅ Format attachments as JSONB
+    const attachments =
+      file_urls && file_urls.length > 0 ? JSON.stringify(file_urls) : null;
+
+    // ✅ Query chuẩn, có id
     const query = `
-      INSERT INTO messages (conversation_id, sender_type, user_id, chatbot_id, content, embedding, attachments, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6::vector, $7::jsonb, NOW(), NOW())
-      RETURNING *
+      INSERT INTO "messages" (
+        "id", "conversation_id", "sender_type", "user_id", "chatbot_id",
+        "content", "embedding", "attachments", "createdAt", "updatedAt"
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8::jsonb, NOW(), NOW())
+      RETURNING *;
     `;
 
     const values = [
+      id,                // ✅ ID sinh thủ công
       conversation_id,
       sender_type,
       user_id,
       chatbot_id,
       content,
       formattedEmbedding,
-      attachments // ✅ Add attachments to values
+      attachments
     ];
 
-    const [result] = await sequelize.query(query, { bind: values });
+    const [result] = await sequelize.query(query, {
+      bind: values,
+    });
+
     return result[0];
   }
 
@@ -86,17 +98,21 @@ class MessageRepository {
     // Build query with optional conversation filter
     let query = `
       SELECT 
-        m.id, 
-        m.content, 
+        m.id,
+        m.content,
         m.conversation_id,
-        m.sender_type as role,
-        m.created_at as timestamp,
+        m.sender_type AS role,
+        m."createdAt" AS timestamp,
         (embedding <-> $1::vector) AS distance,
         (1 - (embedding <-> $1::vector)) AS relevance_score
-      FROM messages m
+      FROM "messages" m
       WHERE m.embedding IS NOT NULL
-    `;
 
+      `;
+      //       AND m.conversation_id = $2 
+      //   AND (embedding <-> $1::vector) < 0.7
+      // ORDER BY embedding <-> $1::vector ASC
+      // LIMIT $3;
     const params: any[] = [vectorStr];
 
     // Add conversation filter if provided

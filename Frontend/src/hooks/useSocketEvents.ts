@@ -28,6 +28,11 @@ export const useSocketEvents = ({
   useEffect(() => {
     if (!socket) return;
 
+    console.log("🔌 useSocketEvents mounted", { 
+      hasRefreshCallback: !!refreshConversationOrder,
+      currentConversationId 
+    });
+
     // Join conversation room
     if (currentConversationId) {
       socket.emit("join_conversation", currentConversationId);
@@ -93,26 +98,16 @@ export const useSocketEvents = ({
             id: savedMessage.id,
             role: 'user',
             content: savedMessage.content,
-            timestamp: new Date(savedMessage.created_at),
+            timestamp: new Date(savedMessage.createdAt),
             status: 'sent' as const,
             isTemp: false,
             attachments: savedMessage.attachments,
           };
 
-          // ✅ Refresh conversation order
-          if (refreshConversationOrder) {
-            refreshConversationOrder();
-          }
-
           return { ...prev, [convId]: updated };
         } else {
           // If no temp message found, add as new (shouldn't happen normally)
           console.log("➕ Adding saved user message");
-          
-          // ✅ Refresh conversation order
-          if (refreshConversationOrder) {
-            refreshConversationOrder();
-          }
 
           return { 
             ...prev, 
@@ -122,7 +117,7 @@ export const useSocketEvents = ({
                 id: savedMessage.id,
                 role: 'user' as const,
                 content: savedMessage.content,
-                timestamp: new Date(savedMessage.created_at),
+                timestamp: new Date(savedMessage.createdAt),
                 status: 'sent' as const,
                 isTemp: false,
                 attachments: savedMessage.attachments,
@@ -131,6 +126,12 @@ export const useSocketEvents = ({
           };
         }
       });
+
+      // ✅ Refresh conversation order AFTER state update
+      console.log("🔄 Triggering conversation order refresh after user message saved...");
+      if (refreshConversationOrder) {
+        refreshConversationOrder();
+      }
 
       // Broadcast to other tabs
       broadcastToTabs({
@@ -302,7 +303,12 @@ export const useSocketEvents = ({
       });
 
       // ✅ Refresh conversation order with AI response
+      console.log("🔄 AI stream ended, checking refresh callback...", { 
+        hasCallback: !!refreshConversationOrder, 
+        conversationId: conversation_id 
+      });
       if (refreshConversationOrder && conversation_id) {
+        console.log("🔄 Triggering conversation order refresh after AI response...");
         refreshConversationOrder();
       }
 
@@ -325,10 +331,14 @@ export const useSocketEvents = ({
     // ✅ Handle conversation_list_updated - Refresh conversation list
     socket.on("conversation_list_updated", ({ conversation_id, action, timestamp }) => {
       console.log(`📢 Conversation list updated: ${conversation_id} - ${action} at ${timestamp}`);
+      console.log("📢 Checking refresh callback...", { hasCallback: !!refreshConversationOrder });
       
       // Trigger refresh
       if (refreshConversationOrder) {
+        console.log("📢 Calling refreshConversationOrder from conversation_list_updated event");
         refreshConversationOrder();
+      } else {
+        console.error("❌ refreshConversationOrder callback is missing!");
       }
 
       // Broadcast to other tabs

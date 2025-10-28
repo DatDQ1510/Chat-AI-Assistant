@@ -98,15 +98,17 @@ export class MessageService {
    */
   private async touchConversation(conversation_id: string) {
     try {
-      const conversation = await conversationService.getConversationById(conversation_id);
-      if (conversation) {
-        // Update without changing any fields - just triggers updatedAt
-        await conversation.save({ silent: false });
-        console.log(`✅ Touched conversation ${conversation_id} - updatedAt updated`);
+      console.log(`🔄 [MessageService] Touching conversation ${conversation_id}`);
+      const success = await conversationService.touchConversation(conversation_id);
+      
+      if (success) {
+        console.log(`✅ [MessageService] Conversation ${conversation_id} updatedAt timestamp refreshed`);
+      } else {
+        console.warn(`⚠️ [MessageService] Failed to touch conversation ${conversation_id}`);
       }
     } catch (error) {
-      console.error(`Failed to touch conversation ${conversation_id}:`, error);
-      // Non-critical, don't throw
+      console.error(`❌ [MessageService] Error touching conversation ${conversation_id}:`, error);
+      // Non-critical, don't throw - conversation will still work, just won't reorder
     }
   }
 
@@ -134,8 +136,8 @@ export class MessageService {
       conversation_id: msg.conversation_id,
       sender_type: msg.sender_type,
       content: msg.content,
-      created_at: msg.createdAt,
-      updated_at: msg.updatedAt,
+      createdAt: msg.createdAt,
+      updatedAt: msg.updatedAt,
       important: msg.important,
       file_urls: msg.attachments || [], // ✅ Map attachments to file_urls
     }));

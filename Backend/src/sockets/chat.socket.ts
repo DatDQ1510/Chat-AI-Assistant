@@ -79,15 +79,17 @@ export const chatSocket = (io: Server) => {
             content,
             sender_type: "user",
             attachments: file_urls || [], // ✅ Include file URLs
-            created_at: (userMessage as any).createdAt || new Date().toISOString(),
-            updated_at: (userMessage as any).updatedAt || new Date().toISOString(),
+            createdAt: (userMessage as any).createdAt || new Date().toISOString(),
+            updatedAt: (userMessage as any).updatedAt || new Date().toISOString(),
           });
           console.log(`✅ User message saved and emitted: ${(userMessage as any).id}${file_urls?.length ? ` with ${file_urls.length} file(s)` : ''}`);
 
           // ✅ STEP 1.6: Emit conversation updated event to trigger list refresh
+          console.log(`🔍 Checking user_id for list update emit:`, { user_id, has_user_id: !!user_id });
           if (user_id) {
             // Emit to all sockets of this user
             const userSockets = socketManager.getSockets(user_id);
+            console.log(`📢 Found ${userSockets.length} socket(s) for user ${user_id}`);
             userSockets.forEach((socketId: string) => {
               io.to(socketId).emit("conversation_list_updated", {
                 conversation_id,
@@ -97,6 +99,8 @@ export const chatSocket = (io: Server) => {
               });
             });
             console.log(`📢 Conversation list update emitted to user ${user_id}'s ${userSockets.length} connection(s)${autoRenamedTo ? ` (auto-renamed to: "${autoRenamedTo}")` : ''}`);
+          } else {
+            console.warn(`⚠️ No user_id provided, skipping conversation_list_updated event`);
           }
 
           
@@ -122,7 +126,7 @@ export const chatSocket = (io: Server) => {
               conversation_id,
               role: "assistant",
               content: "",
-              created_at: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
             });
 
             // Start AI stream

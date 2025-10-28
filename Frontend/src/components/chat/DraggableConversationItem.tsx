@@ -10,6 +10,7 @@ interface DraggableConversationItemProps {
   onClick: (id: string) => void;
   onDelete?: (id: string) => void;
   onRename?: (id: string, newTitle: string) => void;
+  onUpdateTag?: (id: string, tag: string | null) => Promise<void>;
 }
 
 const DRAG_THRESHOLD = 10;
@@ -20,6 +21,7 @@ const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
   onClick,
   onDelete,
   onRename,
+  onUpdateTag,
 }) => {
   const [isDragActive, setIsDragActive] = useState(false);
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -90,6 +92,7 @@ const DraggableConversationItem: React.FC<DraggableConversationItemProps> = ({
         onClick={() => {}}
         onDelete={onDelete}
         onRename={onRename}
+        onUpdateTag={onUpdateTag}
       />
     </div>
   );

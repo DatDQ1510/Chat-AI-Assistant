@@ -14,7 +14,7 @@ import SelectionPopover from './SelectionPopover'; // ✅ New component
 import DragAndDropProvider from './DragAndDropProvider'; // ✅ Drag & Drop
 import type { Conversation, ChatState, Message } from '../../types/chat';
 import { useAuth } from '../../contexts/AuthContext';
-// import conversationService from '../../services/conversation.service'; // Now used by useConversations hook
+import conversationService from '../../services/conversation.service'; // ✅ Re-enabled for tag updates
 import messageService from '../../services/message.service';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import  {useSocket } from "../../contexts/SocketContext";
@@ -88,6 +88,7 @@ const ChatContainer: React.FC = () => {
     createdAt: conv.createdAt ? new Date(conv.createdAt) : new Date(),
     updatedAt: conv.updatedAt ? new Date(conv.updatedAt) : new Date(),
     project_id: conv.project_id ?? null, // ✅ Include project_id
+    conversation_tag: conv.conversation_tag ?? null, // ✅ Include tag
   }), []);
 
   // Get loadConversations from hook first
@@ -479,12 +480,40 @@ const ChatContainer: React.FC = () => {
     // Rename conversation
     await handleRenameConversation(id, newTitle);
 
+    // Reload conversations to update order (updatedAt changed on backend)
+    console.log('🔄 Reloading conversations after rename...');
+    await loadConversations({ page: 1, append: false, manageLoading: false });
+
     // Refresh all expanded projects to sync
     console.log('🔄 Refreshing all projects after rename...');
     if (chatSidebarRef.current) {
       await chatSidebarRef.current.refreshAllProjects();
     }
-  }, [handleRenameConversation]);
+  }, [handleRenameConversation, loadConversations]);
+
+  // ✅ Update conversation tag handler - Refresh all projects after tag update
+  const handleUpdateTag = useCallback(async (id: string, tag: string | null) => {
+    console.log(`🏷️ Updating tag for conversation ${id} to "${tag}"`);
+
+    try {
+      // Update tag via API
+      await conversationService.updateConversationTag(id, tag);
+
+      // Reload conversations to sync
+      await loadConversations({ page: 1, append: false, manageLoading: false });
+
+      // Refresh all expanded projects to sync
+      console.log('🔄 Refreshing all projects after tag update...');
+      if (chatSidebarRef.current) {
+        await chatSidebarRef.current.refreshAllProjects();
+      }
+
+      message.success(tag ? `Tagged as "${tag}"` : 'Tag removed');
+    } catch (error) {
+      console.error('❌ Failed to update tag:', error);
+      message.error('Failed to update tag');
+    }
+  }, [loadConversations]);
 
   // ✅ Refresh all expanded projects
   const handleRefreshAllProjects = useCallback(async () => {
@@ -511,6 +540,7 @@ const ChatContainer: React.FC = () => {
           onSelectConversation={handleSelectConversation}
           onDeleteConversation={handleDeleteWithProjectRefresh}
           onRenameConversation={handleRenameWithProjectRefresh}
+          onUpdateTag={handleUpdateTag}
           onLogout={handleLogout}
           onOpenSettings={handleOpenSettings}
           onOpenSearch={handleOpenSearch}

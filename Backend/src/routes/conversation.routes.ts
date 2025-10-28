@@ -6,6 +6,7 @@ import {
   getConversationById,
   getUserConversations,
   updateConversation,
+  updateConversationTag
 } from "../controllers/conversation.controller.js";
 import { updateConversationProject } from "../controllers/project.controller.js";
 
@@ -17,7 +18,6 @@ router.get("/:id", getConversationById);
 router.patch("/:id", updateConversation);
 router.delete("/:id", deleteConversation);
 router.patch("/:conversation_id/project", updateConversationProject);
-
+router.patch("/:conversation_id/tag", updateConversationTag);
 
 export default router;
- 

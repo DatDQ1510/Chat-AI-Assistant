@@ -19,6 +19,7 @@ export interface Conversation {
   updatedAt: Date;
   messages?: Message[];
   project_id?: string | null; // ✅ Track which project this conversation belongs to
+  conversation_tag?: string | null; // ✅ Tag for categorizing conversations
 }
 
 export interface ChatState {
@@ -58,6 +59,7 @@ export interface ConversationItemProps {
   onClick: (id: string) => void;
   onDelete?: (id: string) => void;
   onRename?: (id: string, newTitle: string) => void;
+  onUpdateTag?: (id: string, tag: string | null) => Promise<void>; // ✅ New callback for tag
   isCompact?: boolean;
 }
 

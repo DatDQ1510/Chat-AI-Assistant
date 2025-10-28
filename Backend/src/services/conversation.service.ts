@@ -27,8 +27,23 @@ class ConversationService {
     async getConversationByProjectId(project_id: string) {
         return this.conversationRepository.getConversationByProjectId(project_id);
     }
+
     async updateConversationProject(conversation_id: string, project_id: string) {
         return this.conversationRepository.updateConversationProject(conversation_id, project_id);
+    }
+
+    async updateTagConversation(conversation_id: string, conversation_tag: string) {
+        console.log(`📝 [Service] Updating tag for conversation ${conversation_id} to ${conversation_tag}`);
+        return this.conversationRepository.updateTagConversation(conversation_id, conversation_tag);
+    }
+
+    /**
+     * Touch conversation to update its updatedAt timestamp
+     * Used when new messages are added to trigger reordering in conversation list
+     */
+    async touchConversation(conversation_id: string): Promise<boolean> {
+        console.log(`🔄 [Service] Touching conversation ${conversation_id}`);
+        return this.conversationRepository.touchConversation(conversation_id);
     }
 }
 

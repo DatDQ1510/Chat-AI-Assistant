@@ -74,7 +74,21 @@ export const useConversations = ({
 
       const normalized = rawConversations.map((c: AnyConversation) => normalizeConversation(c));
 
+      // ✅ Debug: Log conversation order
+      console.log('📋 Conversation order from backend:', normalized.map(c => ({
+        id: c.id.slice(0, 8),
+        title: c.title,
+        updatedAt: c.updatedAt.toISOString()
+      })));
+
       setChatState(prev => {
+        // ✅ Debug: Log previous order
+        console.log('📋 Previous conversation order in state:', prev.conversations.map(c => ({
+          id: c.id.slice(0, 8),
+          title: c.title,
+          updatedAt: c.updatedAt.toISOString()
+        })));
+
         let updatedConversations;
         if (append) {
           const existingIds = new Set(prev.conversations.map(c => c.id));
@@ -89,6 +103,13 @@ export const useConversations = ({
         const targetId = preferred && updatedConversations.some((c: Conversation) => c.id === preferred)
           ? preferred
           : (updatedConversations[0]?.id ?? null);
+
+        // ✅ Debug: Log new order
+        console.log('📋 NEW conversation order being set:', updatedConversations.map(c => ({
+          id: c.id.slice(0, 8),
+          title: c.title,
+          updatedAt: c.updatedAt.toISOString()
+        })));
 
         return {
           ...prev,

@@ -33,8 +33,8 @@ interface MessageDto {
   conversation_id: string;
   sender_type: 'user' | 'assistant';
   content: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Mapping function to convert backend DTO to frontend Message type
@@ -42,7 +42,7 @@ const mapMessage = (dto: MessageDto): Message => ({
   id: dto.id,
   content: dto.content,
   role: dto.sender_type,
-  timestamp: new Date(dto.created_at),
+  timestamp: new Date(dto.createdAt),
 });
 
 // API methods
@@ -228,15 +228,15 @@ interface MessageDto {
   conversation_id: string;
   sender_type: 'user' | 'assistant';
   content: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 ```
 
 **Mapping:**
 - `sender_type` → `role`
-- `created_at` (string) → `timestamp` (Date)
-- Backend includes `conversation_id`, `updated_at` (not used in frontend)
+- `createdAt` (string) → `timestamp` (Date)
+- Backend includes `conversation_id`, `updatedAt` (not used in frontend)
 
 ## State Management
 
@@ -253,8 +253,8 @@ interface ChatState {
 interface Conversation {
   id: string;
   title: string;
-  created_at: Date;
-  updated_at: Date;
+  createdAt: Date;
+  updatedAt: Date;
   messages?: Message[]; // Loaded lazily
 }
 ```

@@ -11,8 +11,8 @@ export const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT),
     dialect: "postgres",
-    logging: false,
-    timezone: "+07:00", 
+    timezone: "+07:00",
+    logging: console.log, 
     pool: {
       max: 20,           
       min: 5,            

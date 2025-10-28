@@ -21,6 +21,7 @@ interface ChatSidebarProps {
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string) => void;
   onRenameConversation: (id: string, newTitle: string) => void;
+  onUpdateTag: (id: string, tag: string | null) => Promise<void>; // ✅ New callback for tag
   onLogout: () => void;
   onOpenSettings: () => void;
   onOpenSearch?: () => void; // ✅ Global semantic search
@@ -44,6 +45,7 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
   onSelectConversation,
   onDeleteConversation,
   onRenameConversation,
+  onUpdateTag,
   onLogout,
   onOpenSettings,
   onOpenSearch,
@@ -244,6 +246,7 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
                 onClick={onSelectConversation}
                 onDelete={onDeleteConversation}
                 onRename={onRenameConversation}
+                onUpdateTag={onUpdateTag}
               />
             ))}
             {isLoadingMore && (

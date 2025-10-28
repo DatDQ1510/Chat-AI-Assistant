@@ -1,13 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { Button, Typography, Dropdown, Modal, Input, Tooltip } from 'antd';
+import { Button, Typography, Dropdown, Modal, Input, Tooltip, Tag } from 'antd';
 import { 
   EllipsisOutlined, 
   DeleteOutlined, 
   EditOutlined,
   MessageOutlined,
+  TagOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import type { ConversationItemProps } from '../../types/chat';
+import AddTagModal from './AddTagModal';
 
 const { Text } = Typography;
 
@@ -17,10 +19,12 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   onClick,
   onDelete,
   onRename,
+  onUpdateTag,
   isCompact = false,
 }) => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newTitle, setNewTitle] = useState(conversation.title);
+  const [isTagModalVisible, setIsTagModalVisible] = useState(false);
 
   const styles = useMemo(() => {
     const activeAccent = '#1677ff';
@@ -98,6 +102,26 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     });
   };
 
+  const handleUpdateTag = async (tag: string | null) => {
+    if (onUpdateTag) {
+      await onUpdateTag(conversation.id, tag);
+      setIsTagModalVisible(false);
+    }
+  };
+
+  // ✅ Tag color mapping
+  const getTagColor = (tag: string) => {
+    const colorMap: Record<string, string> = {
+      work: 'blue',
+      study: 'green',
+      fun: 'orange',
+      personal: 'purple',
+      urgent: 'red',
+      ideas: 'cyan',
+    };
+    return colorMap[tag.toLowerCase()] || 'default';
+  };
+
   const menuItems: MenuProps['items'] = [
     {
       key: 'rename',
@@ -108,6 +132,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         fontSize: 16,
       },
       onClick: () => setIsRenaming(true),
+    },
+    {
+      key: 'tag',
+      label: conversation.conversation_tag ? 'Update Tag' : 'Add Tag',
+      icon: <TagOutlined />,
+      style: {
+        cursor: 'pointer',
+        fontSize: 16,
+      },
+      onClick: () => setIsTagModalVisible(true),
     },
     {
       key: 'delete',
@@ -158,14 +192,34 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
               <Text style={styles.title} ellipsis={{ tooltip: conversation.title }}>
                 {conversation.title}
               </Text>
-              <Text style={styles.date}>
-                {formatDate(conversation.updatedAt)}
-              </Text>
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: 30,
+                justifyContent: 'space-between',
+               }}>
+                <Text style={styles.date}>
+                  {formatDate(conversation.updatedAt)}
+                </Text>
+                {conversation.conversation_tag && (
+                  <Tag 
+                    color={getTagColor(conversation.conversation_tag)} 
+                    style={{ 
+                      fontSize: 13, 
+                      padding: '0 8px',
+                      lineHeight: '20px',
+                      margin: 0,
+                    }}
+                  >
+                    {conversation.conversation_tag}
+                  </Tag>
+                ) }
+              </div>
             </>
           )}
         </div>
       </div>
-      
+
       {!isRenaming && !isCompact && (
         <Dropdown
           menu={{ items: menuItems }}
@@ -182,6 +236,14 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           />
         </Dropdown>
       )}
+
+      {/* ✅ AddTagModal */}
+      <AddTagModal
+        visible={isTagModalVisible}
+        currentTag={conversation.conversation_tag}
+        onConfirm={handleUpdateTag}
+        onCancel={() => setIsTagModalVisible(false)}
+      />
     </div>
   );
 

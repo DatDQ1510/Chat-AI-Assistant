@@ -103,7 +103,6 @@ export const updateConversation = async (req: Request, res: Response, next: Func
   try {
     const { id } = req.params;
     const { conversation_name } = req.body;
-
     await ConversationService.updateConversation(String(id), conversation_name);
     res
       .status(200)
@@ -125,6 +124,22 @@ export const deleteConversation = async (req: Request, res: Response, next: Func
     res
       .status(200)
       .json(successResponse(null, "Conversation deleted successfully"));
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const updateConversationTag = async (req: Request, res: Response, next: Function) => {
+  try {
+    const { conversation_id } = req.params;
+    const { conversation_tag } = req.body;
+    console.log(`📝 [Controller] Updating tag for conversation ${conversation_id} to ${conversation_tag}`);
+    const updatedConversation = await ConversationService.updateTagConversation(conversation_id, conversation_tag);
+    if (!updatedConversation) {
+      return res.status(404).json(errorResponse("Conversation not found"));
+    }
+
+    res.status(200).json(successResponse(updatedConversation, "Conversation tag updated successfully"));
   } catch (error: any) {
     next(error);
   }
