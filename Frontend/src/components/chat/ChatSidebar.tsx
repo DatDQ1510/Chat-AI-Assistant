@@ -76,7 +76,7 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
       }
     },
     refreshAllProjects: async () => {
-      console.log('🔄 ChatSidebar.refreshAllProjects called');
+
       if (projectSidebarRef.current) {
         await projectSidebarRef.current.refreshAllProjects();
       }

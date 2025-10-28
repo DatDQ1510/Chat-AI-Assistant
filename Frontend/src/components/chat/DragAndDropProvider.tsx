@@ -33,30 +33,20 @@ const DragAndDropProvider: React.FC<DragAndDropProviderProps> = ({
       }
 
       if (!draggedConversation) {
-        console.error('Invalid drag data: no conversation');
+
         return;
       }
 
       const conversationId = draggedConversation.id;
       const sourceProjectId = draggedConversation.project_id;
 
-      console.log('🔍 Drag start - Conversation state:', {
-        conversationId,
-        title: draggedConversation.title,
-        sourceProjectId: sourceProjectId || 'main list',
-        targetType,
-      });
-
       // Case 1: Drop into conversations-list (unlink from project)
       if (targetType === 'conversations-list') {
         // Already in main list (no project) - check if sourceProjectId is null/undefined
         if (!sourceProjectId || sourceProjectId === null) {
-          console.log('ℹ️ Conversation is already in main list');
           message.info('Conversation is already in main list');
           return;
         }
-
-        console.log(`📤 Unlinking conversation "${draggedConversation.title}" from project ${sourceProjectId}`);
 
         try {
           // Set project_id to null
@@ -69,14 +59,11 @@ const DragAndDropProvider: React.FC<DragAndDropProviderProps> = ({
 
           // Refresh all projects to remove conversation from old project
           if (onRefreshAllProjects) {
-            console.log('🔄 Refreshing all projects after unlinking...');
             await onRefreshAllProjects();
           } else if (onProjectUpdate && sourceProjectId) {
-            console.log('🔄 Refreshing source project:', sourceProjectId);
             await onProjectUpdate(sourceProjectId);
           }
-        } catch (error) {
-          console.error('Failed to unlink conversation:', error);
+        } catch {
           message.error('Failed to move conversation to main list');
         }
         return;
@@ -89,30 +76,15 @@ const DragAndDropProvider: React.FC<DragAndDropProviderProps> = ({
 
       const projectId = targetProject.id;
 
-      console.log('🔍 Drag to project - Details:', {
-        conversationId,
-        conversationTitle: draggedConversation.title,
-        sourceProjectId: sourceProjectId || 'main list',
-        targetProjectId: projectId,
-      });
-
       // ✅ Check if trying to move to same project (both must have values and be equal)
       if (sourceProjectId && sourceProjectId === projectId) {
-        console.log('ℹ️ Conversation is already in this project');
         message.info('Conversation is already in this project');
         return;
       }
 
-      console.log(`📌 Moving conversation "${draggedConversation.title}" to project "${targetProject.project_name}"`);
-      if (sourceProjectId) {
-        console.log(`   From project: ${sourceProjectId}`);
-      }
-
       try {
         // Call API to update conversation's project
-        const updatedConversation = await conversationService.updateConversationProject(conversationId, projectId);
-        
-        console.log('✅ API response - updated conversation:', updatedConversation);
+        await conversationService.updateConversationProject(conversationId, projectId);
 
         message.success(
           `Moved "${draggedConversation.title}" to project "${targetProject.project_name}"`
@@ -123,26 +95,18 @@ const DragAndDropProvider: React.FC<DragAndDropProviderProps> = ({
 
         // ✅ Refresh ALL expanded projects (simple and effective!)
         if (onRefreshAllProjects) {
-          console.log('🔄 Refreshing ALL expanded projects to ensure sync...');
+
           await onRefreshAllProjects();
         } else if (onProjectUpdate) {
           // Fallback: refresh specific projects
-          console.log('🔄 Refreshing target project:', projectId);
           await onProjectUpdate(projectId);
           
           if (sourceProjectId && sourceProjectId !== projectId) {
-            console.log('🔄 Refreshing source project:', sourceProjectId);
             await onProjectUpdate(sourceProjectId);
-          } else if (!sourceProjectId) {
-            console.log('ℹ️ No source project to refresh (moved from main list)');
-          } else {
-            console.log('ℹ️ Source and target are the same project');
           }
         }
-      } catch (error) {
-        console.error('Failed to move conversation:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to move conversation to project';
-        message.error(errorMessage);
+      } catch {
+        message.error('Failed to move conversation to project');
       }
     },
     [onConversationMoved, onProjectUpdate, onRefreshAllProjects]

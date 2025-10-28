@@ -137,10 +137,7 @@ async createMessage(
     const results = await sequelize.query(query, {
       bind: params,
       type: QueryTypes.SELECT,
-    });
-
-    console.log(`Vector search results: ${results.length} messages found (threshold: ${relevanceThreshold})`);
-    
+    });    
     return results;
   }
 
@@ -154,7 +151,6 @@ async createMessage(
       order: [["createdAt", "DESC"]],
       limit: limit,
     });
-    console.log("Recent messages fetched:", getRecentMessages.length);
     return getRecentMessages.reverse();
   }
 

@@ -44,28 +44,22 @@ class ConversationRepository {
         });
     }
     async updateConversationProject(conversation_id: string, project_id: string | null): Promise<Conversation | null> {
-        console.log(`📝 [Backend] Updating conversation ${conversation_id} to project ${project_id || 'null (unlink)'}`);
         const [updatedRows] = await Conversation.update(
             { project_id },
             { where: { id: conversation_id } }
         );
-        console.log(`✅ [Backend] Updated ${updatedRows} row(s)`);
         if (updatedRows === 0) return null;
         const updated = await this.getConversationById(conversation_id);
-        console.log(`✅ [Backend] Conversation now has project_id:`, updated?.project_id);
         return updated;
     }
 
     async updateTagConversation(conversation_id: string, conversation_tag: string): Promise<Conversation | null> {
-        console.log(`📝 [Backend] Updating conversation ${conversation_id} tag to ${conversation_tag}`)
         const [updatedRows] = await Conversation.update(
             { conversation_tag },
             { where: { id: conversation_id } }
         );
-        console.log(`✅ [Backend] Updated ${updatedRows} row(s)`);
         if (updatedRows === 0) return null;
         const updated = await this.getConversationById(conversation_id);
-        console.log(`✅ [Backend] Conversation now has tag:`, updated?.conversation_tag);
         return updated;
     }
 
@@ -76,8 +70,6 @@ class ConversationRepository {
     async touchConversation(conversation_id: string): Promise<boolean> {
         try {
         const now = new Date();
-        console.log(`🔄 [Repository] Touching conversation ${conversation_id} at ${now.toISOString()}`);
-
         const [result]: any[] = await sequelize.query(
             `
             UPDATE "conversations"
@@ -90,14 +82,12 @@ class ConversationRepository {
 
         if (Array.isArray(result) && result.length > 0) {
             const { updatedAt } = result[0];
-            console.log(`✅ [Repository] updatedAt refreshed: ${updatedAt}`);
             return true;
         } else {
-            console.warn(`⚠️ [Repository] No rows found for conversation ${conversation_id}`);
+
             return false;
         }
         } catch (error: any) {
-        console.error(`❌ [Repository] Failed to touch conversation ${conversation_id}:`, error.message || error);
         return false;
         }
     }

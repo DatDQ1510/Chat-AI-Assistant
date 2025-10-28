@@ -38,7 +38,7 @@ const uploadFile = async (file: File): Promise<UploadResult> => {
       url: response.data.url,
     };
   } catch (error) {
-    console.error('Upload error:', error);
+
     const errorMessage = error instanceof Error 
       ? error.message 
       : 'Upload failed';

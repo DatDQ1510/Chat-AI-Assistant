@@ -43,34 +43,26 @@ export const useMessages = ({
       if (!currentConversationId) return;
       
       if (isLoading) {
-        console.log('⏳ Waiting for conversations to load...');
         return;
       }
       
       const conv = conversations.find(c => c.id === currentConversationId);
       if (!conv) {
-        console.log(`⚠️ Conversation ${currentConversationId} not found in list`);
         return;
       }
       
       if (loadedConversationsRef.current.has(currentConversationId)) {
-        console.log(`✅ Conversation ${currentConversationId} already loaded, skipping`);
         return;
       }
       
-      console.log(`🔖 Marking conversation ${currentConversationId} as loaded`);
       loadedConversationsRef.current.add(currentConversationId);
       
-      try {
-        console.log(`📥 Loading messages for conversation ${currentConversationId}...`);
-        
+      try {        
         const { messages, pagination } = await messageService.getMessagesByConversation(
           currentConversationId,
           { page: 1, limit: 5 }
         );
-        
-        console.log(`✅ Loaded ${messages.length} messages`);
-        
+                
         const sortedMessages = [...messages].sort((a, b) => 
           a.timestamp.getTime() - b.timestamp.getTime()
         );
@@ -86,14 +78,13 @@ export const useMessages = ({
           isLoading: false,
           hasMore: pagination.page < pagination.totalPages,
         };
-        console.log(`📊 Pagination state:`, paginationState);
         
         setMessagePagination(prev => ({   
           ...prev,
           [currentConversationId]: paginationState,
         }));
       } catch (err) {
-        console.error('Failed to load messages for conversation', err);
+        console.error('Failed to load messages for conversation:', err);
         setMessagePagination(prev => ({
           ...prev,
           [currentConversationId]: {
@@ -154,9 +145,8 @@ export const useMessages = ({
         }
       }));
 
-      console.log(`✅ Loaded page ${nextPage} of messages`);
     } catch (err) {
-      console.error('Failed to load more messages', err);
+      console.error('Failed to load more messages:', err);
       setMessagePagination(prev => ({
         ...prev,
         [currentConversationId]: {
@@ -175,8 +165,6 @@ export const useMessages = ({
     const failedMessage = messagesMap[conversationId]?.find(m => m.id === messageId);
 
     if (!failedMessage || failedMessage.status !== 'error') return;
-
-    console.log('🔄 Retrying failed message:', messageId);
 
     if (failedMessage.role === 'user') {
       setMessagesMap(prev => ({
@@ -203,9 +191,7 @@ export const useMessages = ({
       if (aiMessageIndex > 0) {
         const previousUserMessage = messages[aiMessageIndex - 1];
         
-        if (previousUserMessage && previousUserMessage.role === 'user') {
-          console.log('🔄 Retrying AI response for user message:', previousUserMessage.content);
-          
+        if (previousUserMessage && previousUserMessage.role === 'user') {          
           setMessagesMap(prev => ({
             ...prev,
             [conversationId]: (prev[conversationId] || []).filter(m => m.id !== messageId)
@@ -234,7 +220,6 @@ export const useMessages = ({
     navigator.clipboard?.writeText(content).then(() => {
       message.success('Copied to clipboard');
     }).catch(() => {
-      console.log('Copied:', content);
       message.success('Copied to clipboard');
     });
   }, []);

@@ -37,14 +37,13 @@ export async function retrySendMessage(
         });
       });
 
-      console.log(`✅ Retry ${i}/${retries} success for message ${message.id} → ${clientSocketId}`);
       return;
 
     } catch (err) {
-      console.warn(`⚠️ Retry ${i}/${retries} failed for message ${message.id}`, err);
+
 
       if (i === retries) {
-        console.error(`❌ Message ${message.id} failed completely → queue`);
+
         await addToFailedMessageQueue({
           messageId: message.id,
           conversationId,

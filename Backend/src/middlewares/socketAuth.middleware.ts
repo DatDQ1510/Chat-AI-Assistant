@@ -30,11 +30,10 @@ export const authenticateSocket = (socket: SocketAuth, next: (err?: Error) => vo
             id: payload.id,
             email: payload.email
         };
-        console.log("Socket authenticated user:", socket.user);
         next();
     } catch (error) {
         // ❌ Từ chối: Token không hợp lệ
-        console.error("Socket authentication failed:", error);
+
         return next(new Error('Authentication Error: Invalid token.'));
     }
 };

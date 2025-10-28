@@ -110,7 +110,7 @@ const ChatContainer: React.FC = () => {
 
   // ✅ Helper: Reload conversations to get updated order
   const refreshConversationOrder = useCallback(() => {
-    console.log('🔄 Refreshing conversation order...');
+
     loadConversations({ page: 1, append: false, manageLoading: false });
   }, [loadConversations]);
 
@@ -224,7 +224,7 @@ const ChatContainer: React.FC = () => {
         // Wait for DOM update
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error('Failed to load messages:', error);
+        console.error('Failed to load message:', error);
         message.error('Failed to load message');
         return;
       }
@@ -353,7 +353,7 @@ const ChatContainer: React.FC = () => {
       ? finalMessagesMap[chatState.currentConversationId] || []
       : [];
     
-    console.log(`🔍 Current messages for ${chatState.currentConversationId}:`, messages.length, messages);
+
     return messages;
   }, [chatState.currentConversationId, finalMessagesMap]);
   
@@ -444,16 +444,14 @@ const ChatContainer: React.FC = () => {
   }), []);
 
   // Handle conversation moved to project
-  const handleConversationMoved = useCallback(async (conversationId: string, projectId: string) => {
-    console.log(`✅ Conversation ${conversationId} moved to project ${projectId}`);
+  const handleConversationMoved = useCallback(async () => {
     // Reload conversations to reflect the change
     await loadConversations({ page: 1, append: false, manageLoading: false });
-    console.log('✅ Conversation list reloaded after move');
   }, [loadConversations]);
 
   // ✅ Handle project update - Refresh project conversations immediately
   const handleProjectUpdate = useCallback(async (projectId: string) => {
-    console.log(`🔄 Refreshing project ${projectId} conversations...`);
+
     if (chatSidebarRef.current) {
       await chatSidebarRef.current.refreshProject(projectId);
     }
@@ -461,13 +459,13 @@ const ChatContainer: React.FC = () => {
 
   // ✅ Enhanced delete handler - Refresh all projects after deletion
   const handleDeleteWithProjectRefresh = useCallback(async (id: string) => {
-    console.log(`🗑️ Deleting conversation ${id}`);
+
 
     // Delete conversation
     await handleDeleteConversation(id);
 
     // Refresh all expanded projects to sync
-    console.log('🔄 Refreshing all projects after deletion...');
+
     if (chatSidebarRef.current) {
       await chatSidebarRef.current.refreshAllProjects();
     }
@@ -475,17 +473,17 @@ const ChatContainer: React.FC = () => {
 
   // ✅ Enhanced rename handler - Refresh all projects after rename
   const handleRenameWithProjectRefresh = useCallback(async (id: string, newTitle: string) => {
-    console.log(`✏️ Renaming conversation ${id} to "${newTitle}"`);
+
 
     // Rename conversation
     await handleRenameConversation(id, newTitle);
 
     // Reload conversations to update order (updatedAt changed on backend)
-    console.log('🔄 Reloading conversations after rename...');
+
     await loadConversations({ page: 1, append: false, manageLoading: false });
 
     // Refresh all expanded projects to sync
-    console.log('🔄 Refreshing all projects after rename...');
+
     if (chatSidebarRef.current) {
       await chatSidebarRef.current.refreshAllProjects();
     }
@@ -493,7 +491,7 @@ const ChatContainer: React.FC = () => {
 
   // ✅ Update conversation tag handler - Refresh all projects after tag update
   const handleUpdateTag = useCallback(async (id: string, tag: string | null) => {
-    console.log(`🏷️ Updating tag for conversation ${id} to "${tag}"`);
+
 
     try {
       // Update tag via API
@@ -503,21 +501,21 @@ const ChatContainer: React.FC = () => {
       await loadConversations({ page: 1, append: false, manageLoading: false });
 
       // Refresh all expanded projects to sync
-      console.log('🔄 Refreshing all projects after tag update...');
+
       if (chatSidebarRef.current) {
         await chatSidebarRef.current.refreshAllProjects();
       }
 
       message.success(tag ? `Tagged as "${tag}"` : 'Tag removed');
     } catch (error) {
-      console.error('❌ Failed to update tag:', error);
+      console.error('Failed to update tag:', error);
       message.error('Failed to update tag');
     }
   }, [loadConversations]);
 
   // ✅ Refresh all expanded projects
   const handleRefreshAllProjects = useCallback(async () => {
-    console.log('🔄 ChatContainer: Refreshing all projects...');
+
     if (chatSidebarRef.current) {
       await chatSidebarRef.current.refreshAllProjects();
     }

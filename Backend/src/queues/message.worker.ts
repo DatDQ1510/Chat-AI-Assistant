@@ -13,11 +13,9 @@ export const messageWorker = new Worker(
       throw new Error("❌ Missing data in job");
     }
 
-    console.log(`🔁 Retry send message ${message.id} to user ${targetUserId}`);
 
     // ✅ Nếu user còn offline -> throw để BullMQ retry
     if (!socketManager.isUserOnline(targetUserId)) {
-      console.log(`⚠️ User ${targetUserId} offline, retry later`);
       throw new Error("User still offline");
     }
 
@@ -25,7 +23,6 @@ export const messageWorker = new Worker(
     const io = getIO();
     io.to(conversationId).emit("receive_message", message);
 
-    console.log(`✅ Message ${message.id} delivered to ${targetUserId}`);
     return true;
   },
   {

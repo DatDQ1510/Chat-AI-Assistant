@@ -31,7 +31,6 @@ export const useProjects = (): UseProjectsReturn => {
     try {
       const fetchedProjects = await projectService.getProjects();
       setProjects(fetchedProjects);
-      console.log('✅ Projects loaded:', fetchedProjects.length);
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
@@ -50,7 +49,7 @@ export const useProjects = (): UseProjectsReturn => {
       setProjects((prev) => [newProject, ...prev]);
       antMessage.success(`Project "${name}" created successfully`);
     } catch (error) {
-      console.error('Failed to create project:', error);
+
       antMessage.error('Failed to create project');
       throw error;
     }
@@ -70,7 +69,7 @@ export const useProjects = (): UseProjectsReturn => {
       });
       antMessage.success('Project deleted successfully');
     } catch (error) {
-      console.error('Failed to delete project:', error);
+
       antMessage.error('Failed to delete project');
       throw error;
     }
@@ -87,7 +86,7 @@ export const useProjects = (): UseProjectsReturn => {
       );
       antMessage.success('Project updated successfully');
     } catch (error) {
-      console.error('Failed to update project:', error);
+
       antMessage.error('Failed to update project');
       throw error;
     }
@@ -97,11 +96,9 @@ export const useProjects = (): UseProjectsReturn => {
    * Fetch conversations for a project
    */
   const fetchProjectConversations = useCallback(async (projectId: string): Promise<Conversation[]> => {
-    console.log(`📂 Fetching conversations for project ${projectId}...`);
     setLoadingConversations((prev) => new Set(prev).add(projectId));
     try {
       const conversations = await projectService.getConversationsByProjectId(projectId);
-      console.log(`✅ Fetched ${conversations.length} conversations for project ${projectId}`);
       
       // ✅ IMPORTANT: Ensure each conversation has project_id set correctly
       const conversationsWithProjectId = conversations.map(conv => ({
@@ -116,7 +113,7 @@ export const useProjects = (): UseProjectsReturn => {
       
       return conversationsWithProjectId;
     } catch (error) {
-      console.error('Failed to fetch project conversations:', error);
+      console.error('Failed to fetch conversations for project:', error);
       antMessage.error('Failed to load conversations');
       return [];
     } finally {
@@ -156,7 +153,7 @@ export const useProjects = (): UseProjectsReturn => {
    * Refresh all expanded projects - Call API to get latest data
    */
   const refreshAllExpandedProjects = useCallback(async () => {
-    console.log('🔄 Refreshing all expanded projects...', Array.from(expandedProjects));
+
     
     // Refresh each expanded project
     const refreshPromises = Array.from(expandedProjects).map(projectId => 
@@ -164,7 +161,7 @@ export const useProjects = (): UseProjectsReturn => {
     );
     
     await Promise.all(refreshPromises);
-    console.log('✅ All expanded projects refreshed');
+
   }, [expandedProjects, fetchProjectConversations]);
 
   return {

@@ -11,7 +11,6 @@ class SummaryService {
             `${m.sender_type.toUpperCase()}: ${m.content}`)
             .join("\n");
         const lastSummary = (await Conversation.findByPk(conversationId))?.summary;
-        console.log("lastSummary:", lastSummary);
         const prompt = `Tóm tắt nội dung chính của cuộc hội thoại sau:
                         ${lastSummary ? `Dựa trên tóm tắt trước đó: ${lastSummary}` : ""}
                         \n Nội dung kế tiếp : ${contentToSummarize}`;
@@ -19,7 +18,6 @@ class SummaryService {
         const summary = await generatorService.simpleReply(prompt);
 
         await messageRepository.updateConversationSummary(conversationId, summary, lastSummariedIndex + 10);
-        console.log("Summary updated for conversation", conversationId);
     }
 }
 const summaryService = new SummaryService();   

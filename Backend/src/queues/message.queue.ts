@@ -33,5 +33,5 @@ export async function  addToFailedMessageQueue(payload: FailedMessagePayload) {
     removeOnComplete: true,
     removeOnFail: false,
   });
-  console.log(`➕ Message ${payload.messageId} added to failed message queue`);
+
 }

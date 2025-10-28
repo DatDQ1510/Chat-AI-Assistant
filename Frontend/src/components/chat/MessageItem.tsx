@@ -7,7 +7,7 @@ import type { MessageProps } from '../../types/chat';
 const { Text } = Typography;
 
 const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, onToggleImportant }) => {
-  console.log("Rendering MessageItem:", msg);
+
   const isUser = msg.role === 'user';
 
   // Helper to determine file type from URL

@@ -22,7 +22,6 @@ export const userService = {
   // Get current user settings
   getSettings: async (): Promise<UserSettings> => {
     const response = await apiClient.get('v1/api/users/settings');
-    console.log('User settings fetched:', response.data);
     return response.data;
   },
 

@@ -28,11 +28,6 @@ export const useSocketEvents = ({
   useEffect(() => {
     if (!socket) return;
 
-    console.log("🔌 useSocketEvents mounted", { 
-      hasRefreshCallback: !!refreshConversationOrder,
-      currentConversationId 
-    });
-
     // Join conversation room
     if (currentConversationId) {
       socket.emit("join_conversation", currentConversationId);
@@ -40,7 +35,6 @@ export const useSocketEvents = ({
 
     // Handle receive_message
     socket.on("receive_message", (msg, callback) => {
-      console.log("📨 Received message:", msg);
       const formattedMsg = formatMessage(msg);
       const convId = msg.conversation_id;
 
@@ -49,7 +43,6 @@ export const useSocketEvents = ({
         
         const existsById = currentMessages.some(m => m.id === msg.id);
         if (existsById) {
-          console.log("⛔ Duplicate message (by ID), skipping");
           return prev;
         }
 
@@ -60,12 +53,10 @@ export const useSocketEvents = ({
         );
 
         if (tempIndex !== -1) {
-          console.log("🔄 Replacing temp message with real one");
           const updated = [...currentMessages];
           updated[tempIndex] = { ...formattedMsg, isTemp: false };
           return { ...prev, [convId]: updated };
         } else {
-          console.log("➕ Adding new message");
           return { ...prev, [convId]: [...currentMessages, formattedMsg] };
         }
       });
@@ -77,7 +68,6 @@ export const useSocketEvents = ({
 
     // ✅ Handle user_message_saved - Replace temp user message with real saved one
     socket.on("user_message_saved", (savedMessage) => {
-      console.log("💾 User message saved:", savedMessage);
       const convId = savedMessage.conversation_id;
       
       setMessagesMap(prev => {
@@ -92,7 +82,6 @@ export const useSocketEvents = ({
         );
 
         if (tempIndex !== -1) {
-          console.log("🔄 Replacing temp user message with saved one");
           const updated = [...currentMessages];
           updated[tempIndex] = {
             id: savedMessage.id,
@@ -107,7 +96,7 @@ export const useSocketEvents = ({
           return { ...prev, [convId]: updated };
         } else {
           // If no temp message found, add as new (shouldn't happen normally)
-          console.log("➕ Adding saved user message");
+
 
           return { 
             ...prev, 
@@ -128,7 +117,7 @@ export const useSocketEvents = ({
       });
 
       // ✅ Refresh conversation order AFTER state update
-      console.log("🔄 Triggering conversation order refresh after user message saved...");
+
       if (refreshConversationOrder) {
         refreshConversationOrder();
       }
@@ -150,7 +139,7 @@ export const useSocketEvents = ({
 
     // Handle ai_message_init
     socket.on("ai_message_init", (aiMessage) => {
-      console.log("🤖 AI init:", aiMessage);
+
       setIsWaitingForAI(false);
       setChatState(prev => ({ ...prev, isStreaming: true }));
 
@@ -184,7 +173,7 @@ export const useSocketEvents = ({
       }
 
       aiResponseTimeoutRef.current = setTimeout(() => {
-        console.error("⏰ AI response timeout!");
+
         setIsWaitingForAI(false);
         setChatState(prev => ({ ...prev, isStreaming: false }));
 
@@ -256,7 +245,7 @@ export const useSocketEvents = ({
 
     // Handle ai_stream_end
     socket.on("ai_stream_end", ({ message_id, real_message_id, full_content, conversation_id }) => {
-      console.log("✅ AI finished:", message_id, "→ real ID:", real_message_id);
+
       
       if (aiResponseTimeoutRef.current) {
         clearTimeout(aiResponseTimeoutRef.current);
@@ -308,7 +297,7 @@ export const useSocketEvents = ({
         conversationId: conversation_id 
       });
       if (refreshConversationOrder && conversation_id) {
-        console.log("🔄 Triggering conversation order refresh after AI response...");
+
         refreshConversationOrder();
       }
 
@@ -329,16 +318,10 @@ export const useSocketEvents = ({
     });
 
     // ✅ Handle conversation_list_updated - Refresh conversation list
-    socket.on("conversation_list_updated", ({ conversation_id, action, timestamp }) => {
-      console.log(`📢 Conversation list updated: ${conversation_id} - ${action} at ${timestamp}`);
-      console.log("📢 Checking refresh callback...", { hasCallback: !!refreshConversationOrder });
-      
+    socket.on("conversation_list_updated", () => {
       // Trigger refresh
       if (refreshConversationOrder) {
-        console.log("📢 Calling refreshConversationOrder from conversation_list_updated event");
         refreshConversationOrder();
-      } else {
-        console.error("❌ refreshConversationOrder callback is missing!");
       }
 
       // Broadcast to other tabs
@@ -349,8 +332,7 @@ export const useSocketEvents = ({
     });
 
     // Handle ai_error
-    socket.on("ai_error", ({ message_id, conversation_id, error, errorCode }) => {
-      console.error("❌ AI error:", error, "Code:", errorCode);
+    socket.on("ai_error", ({ message_id, conversation_id, error }) => {
       
       if (aiResponseTimeoutRef.current) {
         clearTimeout(aiResponseTimeoutRef.current);
@@ -401,12 +383,12 @@ export const useSocketEvents = ({
 
     // Handle disconnect
     socket.on("disconnect", () => {
-      console.warn("⚠️ Socket disconnected");
+
       
       if (currentAIMessageRef.current) {
         const { id, conversationId } = currentAIMessageRef.current;
         
-        console.error("❌ Socket disconnected during AI response");
+
         setIsWaitingForAI(false);
         setChatState(prev => ({ ...prev, isStreaming: false }));
         
@@ -438,7 +420,7 @@ export const useSocketEvents = ({
 
     // Handle reconnect
     socket.on("connect", () => {
-      console.log("✅ Socket reconnected");
+
       
       if (currentConversationId) {
         socket.emit("join_conversation", currentConversationId);

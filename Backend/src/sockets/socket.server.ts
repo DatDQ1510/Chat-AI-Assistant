@@ -11,7 +11,7 @@ let io: Server | null = null;
  */
 export const createSocketServer = (httpServer: HTTPServer): Server => {
   if (io) {
-    console.warn("⚠️ Socket server already initialized, returning existing instance");
+
     return io;
   }
 
@@ -24,8 +24,6 @@ export const createSocketServer = (httpServer: HTTPServer): Server => {
     pingInterval: 25000,
 
   });
-
-  console.log("✅ Socket.IO server created");
   return io;
 };
 

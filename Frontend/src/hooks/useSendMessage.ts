@@ -70,14 +70,11 @@ export const useSendMessage = ({
       let attempt = 0;
 
       const trySend = () => {
-        attempt++;
-        console.log(`📤 Sending message (attempt ${attempt}/${maxRetries + 1})...`);
-        
+        attempt++;        
         if (!socketInstance.connected) {
-          console.warn("⚠️ Không có kết nối mạng!");
+
 
           if (attempt <= maxRetries) {
-            console.log(`🔄 Đợi kết nối lại... retry sau ${retryDelay}ms`);
             setTimeout(trySend, retryDelay);
             return;
           }
@@ -95,15 +92,14 @@ export const useSendMessage = ({
           if (response && !response.success) {
             const errorCode = response.errorCode || 500;
             const errorMsg = response.error || "Unknown error";
-            console.warn(`⚠️ Attempt ${attempt} failed with code ${errorCode}:`, errorMsg);
+
             
             if (errorCode === 500 && attempt <= maxRetries) {
-              console.log(`🔄 Retrying due to server error (${attempt}/${maxRetries})...`);
               setTimeout(trySend, retryDelay * attempt);
               return;
             }
             
-            console.error(`❌ Failed after ${attempt} attempt(s)`);
+
             
             setIsWaitingForAI(false);
             
@@ -123,9 +119,7 @@ export const useSendMessage = ({
             resolve({ success: false, error: response });
             return;
           }
-          
-          console.log(`✅ Message accepted by server on attempt ${attempt}`);
-          resolve({ success: true });
+            resolve({ success: true });
         });
       };
 
@@ -173,7 +167,7 @@ export const useSendMessage = ({
         loadedConversationsRef.current.add(conv.id);
         socket.emit("join_conversation", conv.id);
       } catch (error) {
-        console.error("Failed to create conversation:", error);
+        console.error("Failed to create new conversation:", error);
         message.error("Failed to create new chat");
         return;
       }
@@ -184,7 +178,7 @@ export const useSendMessage = ({
       ? files.filter(f => f.url).map(f => f.url!)
       : [];
 
-    console.log('📎 Using pre-uploaded file URLs:', uploadedFileUrls);
+
 
     // Create user message
     const userMessage: Message = {

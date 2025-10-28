@@ -6,7 +6,7 @@ import { url } from "inspector";
 
 export const uploadFile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    console.log("File upload request received");    
+
     const file = req.file;
     if (!file) {
       return res.status(400).json({ message: "No file uploaded" });

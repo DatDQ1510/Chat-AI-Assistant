@@ -152,7 +152,7 @@ export const useTabSync = ({
 
         case 'refresh_conversations':
           // ✅ Simple trigger - let each tab refresh independently
-          console.log('🔄 Refresh conversations triggered by another tab');
+
           break;
 
         default:

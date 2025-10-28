@@ -20,11 +20,10 @@ export class MessageService {
 
     if (count > 0  && count % 10 === 0) {
        await summaryQueue.add("auto-summary", { conversationId: conversation_id });
-        console.log(`🧩 Added conversation ${conversation_id} to summary queue`);
     }
 
     const embedding = await embeddingService.generateEmbedding(content).catch((error) => {
-      console.error("⚠️ Embedding failed, set null", error);
+
       return null;
     });
 
@@ -82,12 +81,12 @@ export class MessageService {
       
       // Update conversation name
       await conversationService.updateConversation(conversation_id, newName);
-      console.log(`✅ Auto-renamed conversation ${conversation_id} to: "${newName}"`);
+
       
       return newName; // ✅ Return new name to emit via socket
       
     } catch (error) {
-      console.error(`Failed to auto-rename conversation ${conversation_id}:`, error);
+
       // Non-critical, don't throw
       return null;
     }
@@ -98,16 +97,14 @@ export class MessageService {
    */
   private async touchConversation(conversation_id: string) {
     try {
-      console.log(`🔄 [MessageService] Touching conversation ${conversation_id}`);
       const success = await conversationService.touchConversation(conversation_id);
       
       if (success) {
-        console.log(`✅ [MessageService] Conversation ${conversation_id} updatedAt timestamp refreshed`);
       } else {
-        console.warn(`⚠️ [MessageService] Failed to touch conversation ${conversation_id}`);
+
       }
     } catch (error) {
-      console.error(`❌ [MessageService] Error touching conversation ${conversation_id}:`, error);
+
       // Non-critical, don't throw - conversation will still work, just won't reorder
     }
   }
@@ -195,9 +192,6 @@ export class MessageService {
     conversationId?: string,
     relevanceThreshold: number = 0.5 // Minimum relevance score (0-1 scale, lower distance = higher relevance)
   ) {
-    console.log("Searching messages with vector embedding for query:", query);
-    console.log("Conversation ID:", conversationId);
-    console.log("Relevance threshold:", relevanceThreshold);
     
     // 1️⃣ Create embedding for the query
     const queryEmbedding = await embeddingService.generateEmbedding(query);

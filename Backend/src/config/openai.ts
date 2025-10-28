@@ -13,4 +13,3 @@ export const openai = new OpenAI({
   baseURL: baseURL
 });
 export default openai;
-console.log("✅ OpenAI client initialized");

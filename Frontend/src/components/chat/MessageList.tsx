@@ -37,23 +37,8 @@ const MessageList: React.FC<MessageListProps> = ({
     const container = containerRef.current;
     if (!container || !onLoadMore) return;
 
-    console.log('🔧 Setting up scroll listener:', {
-      hasMore,
-      isLoadingMore,
-      messagesCount: messages.length
-    });
-
     const handleScroll = () => {
-      console.log('📜 Scroll event:', {
-        scrollTop: container.scrollTop,
-        scrollHeight: container.scrollHeight,
-        clientHeight: container.clientHeight,
-        hasMore,
-        isLoadingMore
-      });
-
       if (container.scrollTop <= 10 && hasMore && !isLoadingMore) {
-        console.log('🔝 Loading more messages...');
         scrollHeightBeforeLoad.current = container.scrollHeight;
         onLoadMore();
       }

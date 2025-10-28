@@ -53,7 +53,7 @@ const SignUp: React.FC = () => {
       navigate("/signin");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      console.error("Signup failed:", error);
+
       message.error(error.response?.data?.message || "Failed to create account.");
     } finally {
       setLoading(false);

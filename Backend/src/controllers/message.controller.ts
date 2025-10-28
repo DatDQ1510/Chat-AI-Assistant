@@ -57,8 +57,6 @@ export const getMessagesByConversation = async (
       limit,
       page
     );
-    console.log("Controller fetched messages:", result);
-
     res
       .status(200)
       .json(successResponse(result, "Messages fetched successfully"));
@@ -125,7 +123,7 @@ export const handleReply = async (
       .json(successResponse(replyMessage, "Chatbot replied successfully"));
 
   } catch (error) {
-    console.error(error);
+
     next(error);
   }
 };
@@ -142,7 +140,6 @@ export const toggleImportant = async (
     const messageId = req.params.messageId;
     const { important } = req.body;
     const userId = req.user?.id;
-    console.log("Toggling important status:", { messageId, important, userId });
 
     const updatedMessage = await messageService.toggleImportant(messageId, important);
 
@@ -188,9 +185,7 @@ export const searchMessages = async (
       conversationId,
       relevanceThreshold || 0.5
     );
-    
-    console.log("Search results:", results);
-    
+        
     res
       .status(200)
       .json(successResponse(results, results.length > 0 ? "Messages found successfully" : "No matching messages found"));

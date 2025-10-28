@@ -33,7 +33,7 @@ type PaginatedMessagesDto = {
 };
 
 const mapMessage = (dto: MessageDto): Message => {
-	console.log('📦 Mapping message DTO:', dto);
+
 	return {
 		id: dto.id, // Already a string (UUID)
 		role: dto.sender_type === 'user' ? 'user' : 'assistant',
@@ -167,7 +167,7 @@ const semanticSearch = async (
 			}
 		);
 		
-		console.log("Semantic search response:", response.data);
+
 		
 		// Backend returns: { success, message, data: [...] }
 		const rawResults = response.data.data || [];
@@ -186,7 +186,7 @@ const semanticSearch = async (
 		
 		return { results };
 	} catch (error) {
-		console.error('Semantic search error:', error);
+		console.error('Semantic search failed:', error);
 		return { results: [] };
 	}
 };
@@ -204,7 +204,7 @@ const toggleImportant = async (messageId: string, important: boolean) => {
 		);
 		return { success: true, data: response.data.data };
 	} catch (error) {
-		console.error('Toggle important error:', error);
+
 		return { success: false, error };
 	}
 };
@@ -222,7 +222,7 @@ const getImportantMessages = async (conversationId: string): Promise<Message[]> 
 		const messages = response.data.data || [];
 		return messages.map(mapMessage);
 	} catch (error) {
-		console.error('Get important messages error:', error);
+		console.error('Failed to get important messages:', error);
 		return [];
 	}
 };

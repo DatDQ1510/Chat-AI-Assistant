@@ -12,7 +12,6 @@ export const socketManager = {
       onlineUsers[userId] = new Set();
     }
     onlineUsers[userId].add(socketId);
-    console.log(`📌 Added socket ${socketId} for user ${userId}`);
   },
 
   /**
@@ -24,12 +23,10 @@ export const socketManager = {
     if (!onlineUsers[userId]) return;
     
     onlineUsers[userId].delete(socketId);
-    console.log(`📌 Removed socket ${socketId} for user ${userId}`);
     
     // Clean up if no more connections
     if (onlineUsers[userId].size === 0) {
       delete onlineUsers[userId];
-      console.log(`📌 User ${userId} has no more connections`);
     }
   },
 

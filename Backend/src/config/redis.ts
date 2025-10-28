@@ -7,8 +7,6 @@ const redisConnection = new Redis({
   port: 6379,
   maxRetriesPerRequest: null
 });
-  redisConnection.ping().then(console.log); // Phải trả về "PONG"
-
 redisConnection.on("connect", () => console.log("✅ Redis connected"));
 redisConnection.on("error", (err) => console.error("❌ Redis error:", err));
 

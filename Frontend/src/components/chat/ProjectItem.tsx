@@ -34,7 +34,7 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
         await onRename?.(project.id, newName.trim());
         setIsRenaming(false);
       } catch (error) {
-        console.error('Rename failed:', error);
+        console.error('Failed to rename project:', error);
       } finally {
         setLoading(false);
       }

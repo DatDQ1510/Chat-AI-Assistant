@@ -110,7 +110,7 @@ const updateConversationProject = async (conversationId: string, projectId: stri
  * Update conversation's tag
  */
 const updateConversationTag = async (conversationId: string, tag: string | null): Promise<Conversation> => {
-	console.log(`📝 [Service] Updating tag for conversation ${conversationId} to ${tag}`);
+
 	const response = await axiosClient.patch<ApiResponse<ConversationDto>>(
 		`v1/api/conversations/${conversationId}/tag`,
 		{ conversation_tag: tag }

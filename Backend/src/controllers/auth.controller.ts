@@ -59,13 +59,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
  * @route  POST /api/auth/refresh
  */
 export const refresh = async (req: Request, res: Response, next: NextFunction) => {
-  console.log("🔥 Refresh API called");
   try {
     const refreshToken = req.cookies.refreshToken;
-    console.log("👉 Cookie refreshToken:", refreshToken);
 
     const { sessionId } = req.body;
-    console.log("👉 sessionId from body:", sessionId);
 
     if (!refreshToken || !sessionId) {
       return res.status(401).json(errorResponse("Missing refresh token or session ID"));
@@ -82,7 +79,6 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
       sessionId,
       decoded as { id: string; email: string }
     );
-    console.log('New refresh token generated:', newRefreshToken);
     // Cập nhật cookie refreshToken mới
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,

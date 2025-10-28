@@ -9,7 +9,6 @@ import messageRoutes from "./routes/message.routes.js";
 import uploadRoutes from "./routes/upload.route.js";
 import { authenticate } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
-import openAI  from "./config/openai.js";
 import projectRoutes from "./routes/project.routes.js";
 dotenv.config();
 

@@ -2,6 +2,7 @@ import messageRepository from "../repositories/message.repository";
 import { embeddingService } from "./embedding.service";
 import { User } from "../models/user.model";
 import {config} from "dotenv"
+import { text } from "stream/consumers";
 config();
 const MAX_CONTEXT_TOKENS = Number(process.env.MAX_CONTEXT_TOKENS ?? 3000);
 
@@ -67,12 +68,16 @@ export class ContextService {
     conversationId: string, 
     userMessage: string, 
     userId?: string | null,
-    needsSuggestions = false
+    needsSuggestions = false,
+    text_file_urls?: string
   ) {
     // 1. recent messages
     const recent = await messageRepository.getRecentMessages(conversationId, 5);
     const recentTexts = recent.length > 0 ? recent.map((m: any) => `${m.sender_type.toUpperCase()}: ${m.content}`) : [];
-
+    const pdfTexts: string[] = []; // chứa text từ từng PDF url
+    if (text_file_urls) {
+      pdfTexts.push(text_file_urls);
+    }
     // 2. Load user preferences if userId provided
     let userPreferences = "";
     if (userId) {
@@ -80,7 +85,6 @@ export class ContextService {
         const user = await User.findByPk(userId, {
           attributes: ["language", "writing_style", "custom_instructions", "roleplay_mode"],
         });
-        console.log('Fetched user preferences :', user);
         if (user) {
           const language = user.language || "en";
           const writingStyle = user.writing_style || "friendly";
@@ -107,15 +111,9 @@ export class ContextService {
           }
 
           userPreferences = prefs;
-          console.log(`🎨 User preferences loaded:`, {
-            language,
-            writingStyle,
-            roleplayMode: roleplayMode || 'none',
-            hasCustomInstructions: !!customInstructions.trim()
-          });
         }
       } catch (error) {
-        console.warn("⚠️ Failed to load user preferences, using defaults:", error);
+
       }
     }
 
@@ -123,12 +121,10 @@ export class ContextService {
     let suggestionsInstruction = "";
     if (needsSuggestions) {
       suggestionsInstruction = " After answering, provide 3 follow-up question suggestions in a numbered list format.";
-      console.log("💡 Suggestions mode enabled");
     }
 
     // 4. merge context
-    const merged = [...recentTexts];
-
+    const merged = [...recentTexts, pdfTexts.length > 0 ? `Reference Documents Content from URLs: ${pdfTexts.join(", ")}` : null].filter(Boolean) as string[];
     // 5. truncate by token budget
     const kept = truncateByTokenBudget(merged, userMessage, MAX_CONTEXT_TOKENS);
 

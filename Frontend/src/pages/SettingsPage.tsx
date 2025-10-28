@@ -19,9 +19,9 @@ const SettingsPage: React.FC = () => {
   const loadSettings = React.useCallback(async () => {
     try {
       setLoading(true);
-      console.log('🔄 Loading user settings...');
+
       const data = await userService.getSettings();
-      console.log('✅ Settings loaded:', data);
+
       setSettings(data);
       form.setFieldsValue({
         language: data.language || 'en',
@@ -30,7 +30,7 @@ const SettingsPage: React.FC = () => {
         roleplay_mode: data.roleplay_mode || '',
       });
     } catch (error) {
-      console.error('❌ Failed to load settings:', error);
+
       if (error instanceof Error) {
         message.error(`Failed to load settings: ${error.message}`);
       } else {
@@ -53,18 +53,18 @@ const SettingsPage: React.FC = () => {
   }) => {
     try {
       setSaving(true);
-      console.log('💾 Saving settings:', values);
+
       await userService.updateSettings({
         language: values.language,
         writing_style: values.writing_style,
         custom_instructions: values.custom_instructions || '',
         roleplay_mode: values.roleplay_mode || '',
       });
-      console.log('✅ Settings saved successfully');
+
       message.success('Settings saved successfully!');
       setSettings(prev => prev ? { ...prev, ...values } : null);
     } catch (error) {
-      console.error('❌ Failed to save settings:', error);
+
       if (error instanceof Error) {
         message.error(`Failed to save settings: ${error.message}`);
       } else {

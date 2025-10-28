@@ -56,8 +56,6 @@ class ProjectService {
         headers: this.getAuthHeaders(),
       });
 
-      console.log('📁 Projects fetched:', response.data);
-
       if (response.data.data && Array.isArray(response.data.data)) {
         return response.data.data.map(mapProject);
       }
@@ -80,7 +78,6 @@ class ProjectService {
         { headers: this.getAuthHeaders() }
       );
 
-      console.log('✅ Project created:', response.data);
       return mapProject(response.data.data);
     } catch (error) {
       console.error('Failed to create project:', error);
@@ -97,7 +94,6 @@ class ProjectService {
         headers: this.getAuthHeaders(),
       });
 
-      console.log('🗑️ Project deleted:', projectId);
     } catch (error) {
       console.error('Failed to delete project:', error);
       throw error;
@@ -115,7 +111,6 @@ class ProjectService {
         { headers: this.getAuthHeaders() }
       );
 
-      console.log('✏️ Project updated:', projectId);
     } catch (error) {
       console.error('Failed to update project:', error);
       throw error;
@@ -132,15 +127,13 @@ class ProjectService {
         { headers: this.getAuthHeaders() }
       );
 
-      console.log(`📝 Conversations for project ${projectId}:`, response.data);
-
       if (response.data.data && Array.isArray(response.data.data)) {
         return response.data.data.map(mapConversation);
       }
 
       return [];
     } catch (error) {
-      console.error('Failed to fetch project conversations:', error);
+      console.error('Failed to fetch conversations for project:', error);
       throw error;
     }
   }

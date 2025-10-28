@@ -13,15 +13,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     // Get socket instance with current token
     const socketInstance = getSocket();
     setSocket(socketInstance);
-
-    console.log("✅ Socket instance created");
-
     socketInstance.on("connect", () => {
-      console.log("🟢 WebSocket connected:", socketInstance.id);
+      // Connected
     });
 
-    socketInstance.on("connect_error", (error) => {
-      console.error("� WebSocket connection error:", error.message);
+    socketInstance.on("connect_error", () => {
       // Retry with fresh token
       const token = localStorage.getItem("accessToken");
       if (token && socketInstance.auth) {
@@ -30,14 +26,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    socketInstance.on("disconnect", (reason) => {
-      console.log("🔴 WebSocket disconnected:", reason);
+    socketInstance.on("disconnect", () => {
+      // Disconnected
     });
 
     // Cleanup when unmount
     return () => {
       disconnectSocket();
-      console.log("🔌 WebSocket cleanup disconnect");
+
     };
   }, []);
 

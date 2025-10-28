@@ -48,11 +48,9 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
   // ✅ Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     refreshProject: async (projectId: string) => {
-      console.log('🔄 ProjectSidebar.refreshProject called for:', projectId);
       await fetchProjectConversations(projectId);
     },
     refreshAllProjects: async () => {
-      console.log('🔄 ProjectSidebar.refreshAllProjects called');
       await refreshAllExpandedProjects();
     },
   }), [fetchProjectConversations, refreshAllExpandedProjects]);

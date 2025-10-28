@@ -70,25 +70,12 @@ export const useConversations = ({
       const total = response?.pagination?.total ?? 0;
       const totalPages = Math.ceil(total / limit);
 
-      console.log(`[ChatContainer] Loaded conversations page ${page}:`, rawConversations.length, 'of', total);
 
       const normalized = rawConversations.map((c: AnyConversation) => normalizeConversation(c));
 
-      // ✅ Debug: Log conversation order
-      console.log('📋 Conversation order from backend:', normalized.map(c => ({
-        id: c.id.slice(0, 8),
-        title: c.title,
-        updatedAt: c.updatedAt.toISOString()
-      })));
+
 
       setChatState(prev => {
-        // ✅ Debug: Log previous order
-        console.log('📋 Previous conversation order in state:', prev.conversations.map(c => ({
-          id: c.id.slice(0, 8),
-          title: c.title,
-          updatedAt: c.updatedAt.toISOString()
-        })));
-
         let updatedConversations;
         if (append) {
           const existingIds = new Set(prev.conversations.map(c => c.id));
@@ -103,13 +90,6 @@ export const useConversations = ({
         const targetId = preferred && updatedConversations.some((c: Conversation) => c.id === preferred)
           ? preferred
           : (updatedConversations[0]?.id ?? null);
-
-        // ✅ Debug: Log new order
-        console.log('📋 NEW conversation order being set:', updatedConversations.map(c => ({
-          id: c.id.slice(0, 8),
-          title: c.title,
-          updatedAt: c.updatedAt.toISOString()
-        })));
 
         return {
           ...prev,
@@ -127,8 +107,8 @@ export const useConversations = ({
       });
     } catch (err) {
       if (signal?.aborted) return;
-      
-      console.error('Failed to load conversations', err);
+      console.error('Failed to load conversations:', err);
+
       message.error('Could not load conversations from server.');
       setChatState({
         conversations: [],
@@ -161,7 +141,7 @@ export const useConversations = ({
       message.success('New conversation created');
     } catch (err) {
       hide();
-      console.error('Failed to create conversation', err);
+      console.error('Failed to create conversation:', err);
       message.error('Failed to create conversation');
     } finally {
       setOperationLoading({ type: null });
@@ -191,7 +171,7 @@ export const useConversations = ({
       hide();
     } catch (err) {
       hide();
-      console.error('Failed to load conversation', err);
+      console.error('Failed to load conversation:', err);
       message.error('Failed to load conversation');
     } finally {
       setOperationLoading({ type: null });
@@ -230,7 +210,7 @@ export const useConversations = ({
       message.success('Conversation deleted');
     } catch (err) {
       hide();
-      console.error('Failed to delete conversation', err);
+      console.error('Failed to delete conversation:', err);
       message.error('Failed to delete conversation');
       await loadConversations({ page: 1, append: false });
     } finally {
@@ -260,7 +240,7 @@ export const useConversations = ({
       message.success('Conversation renamed');
     } catch (err) {
       hide();
-      console.error('Failed to rename conversation', err);
+      console.error('Failed to rename conversation:', err);
       message.error('Failed to rename conversation');
     } finally {
       setOperationLoading({ type: null });
@@ -272,7 +252,7 @@ export const useConversations = ({
     if (conversationPagination.isLoading || !conversationPagination.hasMore) return;
 
     const nextPage = conversationPagination.currentPage + 1;
-    console.log(`📄 Loading more conversations (page ${nextPage})...`);
+
     
     await loadConversations({ page: nextPage, append: true, manageLoading: false });
   }, [conversationPagination, loadConversations]);

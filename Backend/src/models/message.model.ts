@@ -89,4 +89,4 @@ Message.init(
 // index
 // Associations
 Message.belongsTo(User, { foreignKey: "user_id", as: "user" });
-User.hasMany(Message, { foreignKey: "user_id", as: "messages" });
+User.hasMany(Message, { foreignKey: "user_id", as: "messages", onDelete: "SET NULL" });

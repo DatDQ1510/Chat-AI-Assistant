@@ -24,7 +24,7 @@ export type TabSyncEvent =
 export const broadcastToTabs = (event: TabSyncEvent) => {
   try {
     chatChannel.postMessage(event);
-  } catch (error) {
-    console.error('Failed to broadcast to tabs:', error);
+  } catch {
+    // BroadcastChannel not supported or failed
   }
 };

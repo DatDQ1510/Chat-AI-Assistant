@@ -51,7 +51,7 @@ const AddTagModal: FC<AddTagModalProps> = ({
       setInputValue('');
       setSelectedTag('');
     } catch (error) {
-      console.error('Failed to update tag:', error);
+      console.error('Failed to confirm tag:', error);
     } finally {
       setLoading(false);
     }

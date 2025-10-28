@@ -12,7 +12,7 @@ export const sequelize = new Sequelize(
     port: Number(process.env.DB_PORT),
     dialect: "postgres",
     timezone: "+07:00",
-    logging: console.log, 
+    logging: false,
     pool: {
       max: 20,           
       min: 5,            
@@ -29,10 +29,8 @@ export const connectDB = async () => {
     await sequelize.sync(
       { alter: true }
     );
-    console.log("✅ Database connected successfully");
-
   } catch (error) {
-    console.error("❌ Database connection failed:", error);
+
     process.exit(1);
   }
 };

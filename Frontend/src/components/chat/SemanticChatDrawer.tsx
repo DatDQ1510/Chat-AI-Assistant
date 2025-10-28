@@ -61,7 +61,6 @@ const SemanticChatDrawer: React.FC<SemanticChatDrawerProps> = ({
 
     // ✅ Kiểm tra cache trước
     if (searchCacheRef.current[cacheKey]) {
-      console.log('📦 Using cached search results');
       setSearchResults(searchCacheRef.current[cacheKey]);
       setModalVisible(true);
       return;
@@ -85,7 +84,7 @@ const SemanticChatDrawer: React.FC<SemanticChatDrawerProps> = ({
       setSearchResults(results);
       setModalVisible(true);
     } catch (error) {
-      console.error('Semantic search error:', error);
+      console.error('Search failed:', error);
       setSearchResults([]);
       setModalVisible(true);
     } finally {

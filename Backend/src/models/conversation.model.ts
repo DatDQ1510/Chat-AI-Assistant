@@ -79,7 +79,7 @@ Conversation.init(
 
 // 🔗 Association
 Conversation.belongsTo(User, { foreignKey: "user_id", as: "user" });
-User.hasMany(Conversation, { foreignKey: "user_id", as: "conversations" });
+User.hasMany(Conversation, { foreignKey: "user_id", as: "conversations", onDelete: "CASCADE" });
 
 Conversation.belongsTo(Project, { foreignKey: "project_id", as: "project" });
-Project.hasMany(Conversation, { foreignKey: "project_id", as: "conversations" });
+Project.hasMany(Conversation, { foreignKey: "project_id", as: "conversations", onDelete: "SET NULL" });

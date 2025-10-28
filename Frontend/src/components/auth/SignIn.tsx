@@ -36,7 +36,7 @@ const SignIn: React.FC = () => {
       message.success('Welcome back! Signed in successfully.', 5);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      console.error('Login failed:', error);
+
       message.error(
         error.response?.data?.message || 'Invalid email or password.', 3
       );
@@ -46,7 +46,6 @@ const SignIn: React.FC = () => {
   };
 
   const handleSocialLogin = (provider: 'google') => {
-    console.log(`Social login with ${provider} clicked`);
     message.info(`${provider} login will be implemented soon!`, 3);
 
   };  

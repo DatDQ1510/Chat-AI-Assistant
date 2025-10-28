@@ -58,11 +58,11 @@ const SearchModal: React.FC<SearchModalProps> = ({
     setLoading(true);
     try {
       const response = await messageService.semanticSearch(searchQuery, 20);
-      console.log('Semantic search response:', response);
+
       
       setSearchResults(response.results || []);
     } catch (error) {
-      console.error('Search error:', error);
+      console.error('Search failed:', error);
       setSearchResults([]);
     } finally {
       setLoading(false);

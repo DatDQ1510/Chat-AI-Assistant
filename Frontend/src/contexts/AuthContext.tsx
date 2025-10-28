@@ -31,16 +31,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let isMounted = true;
 
     const initializeAuth = async () => {
-      console.log('[AuthContext] Initializing auth...');
       const token = localStorage.getItem('accessToken');
       const sessionId = localStorage.getItem('sessionId');
-      console.log('[AuthContext] Token exists:', !!token, 'SessionId:', !!sessionId);
 
       if (token && !isTokenExpired(token)) {
         const extractedUserId = getUserIdFromToken(token);
-        const extractedEmail = getUserEmailFromToken(token);
-        console.log('[AuthContext] Token valid, userId:', extractedUserId, 'email:', extractedEmail);
-        
+        const extractedEmail = getUserEmailFromToken(token);        
         if (isMounted) {
           setIsAuthenticated(true);
           setUserId(extractedUserId);
@@ -50,16 +46,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (sessionId) {
-        console.log('[AuthContext] Attempting token refresh...');
         try {
           const response = await requestRefresh(sessionId);
           const newToken = response.data?.accessToken;
           if (response.success && newToken) {
             localStorage.setItem('accessToken', newToken);
             const extractedUserId = getUserIdFromToken(newToken);
-            const extractedEmail = getUserEmailFromToken(newToken);
-            console.log('[AuthContext] Refresh success, userId:', extractedUserId);
-            
+            const extractedEmail = getUserEmailFromToken(newToken);            
             if (isMounted) {
               setIsAuthenticated(true);
               setUserId(extractedUserId);
@@ -67,12 +60,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             return;
           }
-        } catch (error) {
-          console.error('[AuthContext] Failed to refresh session', error);
+        } catch {
+          // Silently fail refresh attempt
         }
       }
 
-      console.log('[AuthContext] No valid auth, clearing...');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('sessionId');
       if (isMounted) {
@@ -84,7 +76,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initializeAuth().finally(() => {
       if (isMounted) {
-        console.log('[AuthContext] Auth initialization complete, ready: true');
         setIsAuthReady(true);
       }
     });
@@ -112,12 +103,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const sessionId = localStorage.getItem('sessionId');
       if (sessionId) {
         await requestLogout(sessionId);
-        console.log('Logged out from server');
       } else {
         success = false;
       }
-    } catch (error) {
-      console.error('Failed to log out from server', error);
+    } catch {
       success = false;
     } finally {
       localStorage.removeItem('accessToken');

@@ -33,7 +33,6 @@ class ConversationService {
     }
 
     async updateTagConversation(conversation_id: string, conversation_tag: string) {
-        console.log(`📝 [Service] Updating tag for conversation ${conversation_id} to ${conversation_tag}`);
         return this.conversationRepository.updateTagConversation(conversation_id, conversation_tag);
     }
 
@@ -42,7 +41,6 @@ class ConversationService {
      * Used when new messages are added to trigger reordering in conversation list
      */
     async touchConversation(conversation_id: string): Promise<boolean> {
-        console.log(`🔄 [Service] Touching conversation ${conversation_id}`);
         return this.conversationRepository.touchConversation(conversation_id);
     }
 }
