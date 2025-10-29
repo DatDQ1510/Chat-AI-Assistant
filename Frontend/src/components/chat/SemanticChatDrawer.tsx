@@ -72,8 +72,7 @@ const SemanticChatDrawer: React.FC<SemanticChatDrawerProps> = ({
       const response = await messageService.semanticSearch(
         searchQuery, 
         5, 
-        conversationId, 
-        0.3 // 30% relevance threshold
+        conversationId
       );
       
       const results = response.results || [];

@@ -9,6 +9,7 @@ export interface Message {
   retryCount?: number; // Track retry attempts
   important?: boolean; // ✅ Mark message as important for semantic search
   attachments?: string[]; // ✅ File URLs attached to this message
+  suggestions?: string[]; // ✅ AI-generated follow-up questions
 }
 
 export interface Conversation {
@@ -51,6 +52,7 @@ export interface MessageProps {
   onCopy?: (content: string) => void;
   onRetry?: (messageId: string) => void; // ✅ Retry failed messages
   onToggleImportant?: (messageId: string, important: boolean) => void; // ✅ Toggle important status
+  onSuggestionClick?: (suggestion: string) => void; // ✅ Handle suggestion button click
 }
 
 export interface ConversationItemProps {

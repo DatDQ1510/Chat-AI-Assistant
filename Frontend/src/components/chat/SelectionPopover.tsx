@@ -4,18 +4,28 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 
 interface SelectionPopoverProps {
   onAskAI: (selectedText: string) => void;
+  containerRef?: React.RefObject<HTMLElement | null>; // ✅ Allow null in the ref type
 }
 
-const SelectionPopover: React.FC<SelectionPopoverProps> = ({ onAskAI }) => {
+const SelectionPopover: React.FC<SelectionPopoverProps> = ({ onAskAI, containerRef }) => {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [selectedText, setSelectedText] = useState('');
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleSelection = () => {
+    const handleSelection = (event: MouseEvent | TouchEvent) => {
       const selection = window.getSelection();
       const text = selection?.toString().trim();
+
+      // ✅ Check if selection is within the specified container
+      if (containerRef?.current) {
+        const target = event.target as Node;
+        if (!containerRef.current.contains(target)) {
+          // Selection is outside container, ignore it
+          return;
+        }
+      }
 
       if (text && text.length > 0) {
         const range = selection?.getRangeAt(0);
@@ -36,9 +46,11 @@ const SelectionPopover: React.FC<SelectionPopoverProps> = ({ onAskAI }) => {
       }
     };
 
-    // Lắng nghe sự kiện bôi đen text (desktop + mobile)
-    document.addEventListener('mouseup', handleSelection);
-    document.addEventListener('touchend', handleSelection);
+    // ✅ Lắng nghe sự kiện bôi đen text - CHỈ trong container được chỉ định
+    const targetElement = containerRef?.current || document;
+    
+    targetElement.addEventListener('mouseup', handleSelection as EventListener);
+    targetElement.addEventListener('touchend', handleSelection as EventListener);
 
     // Ẩn popover khi click bên ngoài
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,11 +65,11 @@ const SelectionPopover: React.FC<SelectionPopoverProps> = ({ onAskAI }) => {
     document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      document.removeEventListener('mouseup', handleSelection);
-      document.removeEventListener('touchend', handleSelection);
+      targetElement.removeEventListener('mouseup', handleSelection as EventListener);
+      targetElement.removeEventListener('touchend', handleSelection as EventListener);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [containerRef]);
 
   const handleAskAI = () => {
     if (selectedText) {

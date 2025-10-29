@@ -177,13 +177,12 @@ export const searchMessages = async (
   next: NextFunction
 ) => {
   try {
-    const { query, limit, conversationId, relevanceThreshold } = req.body;
+    const { query, limit, conversationId } = req.body;
 
     const results = await messageService.searchByVectorEmbedding(
       query,
       limit || 5,
       conversationId,
-      relevanceThreshold || 0.5
     );
         
     res

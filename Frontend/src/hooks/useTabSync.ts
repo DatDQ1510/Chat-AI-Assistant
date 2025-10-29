@@ -75,7 +75,8 @@ export const useTabSync = ({
                     content: payload.fullContent,
                     isStreaming: false,
                     status: 'sent' as const,
-                    isTemp: false
+                    isTemp: false,
+                    suggestions: payload.suggestions || undefined // ✅ Sync suggestions across tabs
                   }
                 : m
             ),

@@ -16,6 +16,26 @@ import type { Conversation, ChatState, Message } from '../../types/chat';
 import { useAuth } from '../../contexts/AuthContext';
 import conversationService from '../../services/conversation.service'; // ✅ Re-enabled for tag updates
 import messageService from '../../services/message.service';
+
+// ✅ Search result type
+interface SearchResult {
+  id: string;
+  content: string;
+  conversation_id: string;
+  conversation_title?: string;
+  relevance_score?: number;
+  role: 'user' | 'assistant';
+  timestamp: Date;
+  important?: boolean;
+}
+
+interface SearchResultsCache {
+  [query: string]: {
+    results: SearchResult[];
+    timestamp: number;
+  };
+}
+
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import  {useSocket } from "../../contexts/SocketContext";
 // import { formatMessage } from "../../utils/chat" // Now used inside useSocketEvents hook
@@ -34,6 +54,7 @@ const ChatContainer: React.FC = () => {
   // ✅ Create ref để control ChatInput
   const chatInputRef = useRef<ChatInputRef>(null);
   const chatSidebarRef = useRef<ChatSidebarRef>(null); // ✅ Ref for ChatSidebar
+  const messageListRef = useRef<HTMLDivElement>(null); // ✅ Ref for MessageList container (selection area)
   
   const [chatState, setChatState] = useState<ChatState>({
     conversations: [],
@@ -176,6 +197,12 @@ const ChatContainer: React.FC = () => {
   // ✅ Search modal state
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [importantDrawerVisible, setImportantDrawerVisible] = useState(false);
+  
+  // ✅ Search results cache - persistent across modal open/close
+  const [searchResultsCache, setSearchResultsCache] = useState<SearchResultsCache>({});
+  
+  // ✅ Last search query - to restore when reopening modal
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
 
   const handleOpenSearch = useCallback(() => {
     setSearchModalVisible(true);
@@ -251,16 +278,27 @@ const ChatContainer: React.FC = () => {
       return;
     }
 
-    // ✅ Điền text vào input
-    chatInputRef.current?.setInputValue(selectedText);
+    // ✅ Set selected text in ChatInput preview box (không điền trực tiếp vào input nữa)
+    chatInputRef.current?.setSelectedText(selectedText);
     
-    // ✅ Focus vào input sau 100ms để đảm bảo text đã được set
+    // ✅ Focus vào input sau 100ms để user có thể thêm context
     setTimeout(() => {
       chatInputRef.current?.focusInput();
     }, 100);
     
-    message.success('Text filled in input - You can edit before sending');
+    message.success('📝 Text added to follow-up - Add your question below');
   }, [chatState.currentConversationId]);
+
+  // ✅ Handle suggestion click → Send as message
+  const handleSuggestionClick = useCallback((suggestion: string) => {
+    if (!chatState.currentConversationId) {
+      message.warning('Please select a conversation first');
+      return;
+    }
+
+    // Send suggestion as a normal message (without files, needs_suggestions = false)
+    handleSendMessage(suggestion, false);
+  }, [chatState.currentConversationId, handleSendMessage]);
 
   // ✅ Initial load: Load conversations on mount
   useEffect(() => {
@@ -602,7 +640,7 @@ const ChatContainer: React.FC = () => {
             </Button>
           </div>
 
-          <div style={styles.messages}>
+          <div style={styles.messages} ref={messageListRef}>
             <MessageList
               messages={currentMessages}
               isLoading={finalIsWaitingForAI}
@@ -612,6 +650,7 @@ const ChatContainer: React.FC = () => {
               isLoadingMore={chatState.currentConversationId ? finalMessagePagination[chatState.currentConversationId]?.isLoading : false}
               onRetryMessage={handleRetryMessage}
               onToggleImportant={handleToggleImportant}
+              onSuggestionClick={handleSuggestionClick}
             />
           </div>
 
@@ -631,6 +670,10 @@ const ChatContainer: React.FC = () => {
         visible={searchModalVisible}
         onClose={handleCloseSearch}
         currentUserId={userId}
+        searchResultsCache={searchResultsCache}
+        onUpdateCache={setSearchResultsCache}
+        lastSearchQuery={lastSearchQuery}
+        onUpdateLastQuery={setLastSearchQuery}
       />
     
       {/* Important Messages Drawer */}
@@ -641,8 +684,11 @@ const ChatContainer: React.FC = () => {
         onMessageClick={handleScrollToMessage}
       />
 
-      {/* ✅ Text Selection Popover - Ask AI about selected text */}
-      <SelectionPopover onAskAI={handleAskAIAboutSelection} />
+      {/* ✅ Text Selection Popover - Ask AI about selected text (only in MessageList area) */}
+      <SelectionPopover 
+        onAskAI={handleAskAIAboutSelection}
+        containerRef={messageListRef}
+      />
       </div>
     </DragAndDropProvider>
   );

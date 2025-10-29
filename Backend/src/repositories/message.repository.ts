@@ -91,7 +91,6 @@ async createMessage(
     queryEmbedding: any, 
     limit: number,
     conversationId?: string,
-    relevanceThreshold: number = 0.5
   ) {
     const vectorStr = `[${queryEmbedding.join(',')}]`;
 
@@ -103,16 +102,10 @@ async createMessage(
         m.conversation_id,
         m.sender_type AS role,
         m."createdAt" AS timestamp,
-        (embedding <-> $1::vector) AS distance,
-        (1 - (embedding <-> $1::vector)) AS relevance_score
+        (embedding <-> $1::vector) AS distance
       FROM "messages" m
       WHERE m.embedding IS NOT NULL
-
       `;
-      //       AND m.conversation_id = $2 
-      //   AND (embedding <-> $1::vector) < 0.7
-      // ORDER BY embedding <-> $1::vector ASC
-      // LIMIT $3;
     const params: any[] = [vectorStr];
 
     // Add conversation filter if provided
@@ -120,12 +113,6 @@ async createMessage(
       query += ` AND m.conversation_id = $${params.length + 1}`;
       params.push(conversationId);
     }
-
-    // Add relevance threshold filter (distance should be less than threshold)
-    // Note: Lower distance = higher similarity
-    // Convert relevance threshold (0.3 = 30% relevant) to distance (1 - 0.3 = 0.7 max distance)
-    const maxDistance = 1 - relevanceThreshold;
-    query += ` AND (embedding <-> $1::vector) < ${maxDistance}`;
 
     // Order by distance (best matches first) and limit
     query += `

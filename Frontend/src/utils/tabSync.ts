@@ -11,7 +11,7 @@ export type TabSyncEvent =
   | { type: 'update_message'; payload: { conversationId: string; messageId: string; updates: Partial<AnyMessage> } }
   | { type: 'ai_message_init'; payload: { conversationId: string; message: AnyMessage } }
   | { type: 'ai_stream_chunk'; payload: { conversationId: string; messageId: string; chunk: string } }
-  | { type: 'ai_stream_end'; payload: { conversationId: string; messageId: string; realMessageId: string; fullContent: string } }
+  | { type: 'ai_stream_end'; payload: { conversationId: string; messageId: string; realMessageId: string; fullContent: string; suggestions?: string[] } }
   | { type: 'ai_error'; payload: { conversationId: string; messageId: string; error: string } }
   | { type: 'new_conversation'; payload: { conversation: AnyConversation } }
   | { type: 'delete_conversation'; payload: { conversationId: string } }

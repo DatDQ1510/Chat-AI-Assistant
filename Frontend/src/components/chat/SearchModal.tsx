@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Modal, Input, List, Tag, Empty, Spin, Typography } from 'antd';
+import { Modal, Input, List, Tag, Empty, Spin, Typography, Button, Tooltip } from 'antd';
 import type { InputRef } from 'antd';
-import { SearchOutlined, ClockCircleOutlined, StarFilled } from '@ant-design/icons';
+import { SearchOutlined, ClockCircleOutlined, StarFilled, ThunderboltFilled, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import messageService from '../../services/message.service';
 
@@ -19,55 +19,148 @@ interface SearchResult {
   important?: boolean;
 }
 
+interface SearchResultsCache {
+  [query: string]: {
+    results: SearchResult[];
+    timestamp: number;
+  };
+}
+
 interface SearchModalProps {
   visible: boolean;
   onClose: () => void;
   currentUserId: string | null;
+  searchResultsCache: SearchResultsCache;
+  onUpdateCache: (cache: SearchResultsCache) => void;
+  lastSearchQuery: string;
+  onUpdateLastQuery: (query: string) => void;
 }
+
+// Cache configuration
+const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
 const SearchModal: React.FC<SearchModalProps> = ({ 
   visible, 
   onClose, 
   currentUserId,
+  searchResultsCache,
+  onUpdateCache,
+  lastSearchQuery,
+  onUpdateLastQuery,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isCachedResult, setIsCachedResult] = useState(false);
   const inputRef = useRef<InputRef>(null);
   const navigate = useNavigate();
 
-  // Auto focus input when modal opens
+  // Generate cache key for current query
+  const getCacheKey = useCallback((query: string) => {
+    return query.toLowerCase().trim();
+  }, []);
+
+  // Load from cache
+  const loadFromCache = useCallback((query: string): SearchResult[] | null => {
+    if (!query.trim()) return null;
+
+    const cacheKey = getCacheKey(query);
+    const cached = searchResultsCache[cacheKey];
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS) {
+      // Convert timestamp strings back to Date objects
+      return cached.results.map(r => ({
+        ...r,
+        timestamp: new Date(r.timestamp)
+      }));
+    }
+
+    return null;
+  }, [searchResultsCache, getCacheKey]);
+
+  // Save to cache
+  const saveToCache = useCallback((query: string, results: SearchResult[]) => {
+    if (!query.trim()) return;
+
+    const cacheKey = getCacheKey(query);
+    
+    onUpdateCache({
+      ...searchResultsCache,
+      [cacheKey]: {
+        results,
+        timestamp: Date.now()
+      }
+    });
+  }, [searchResultsCache, onUpdateCache, getCacheKey]);
+
+  // Clear cache
+  const clearCache = useCallback(() => {
+    onUpdateCache({});
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsCachedResult(false);
+    onUpdateLastQuery('');
+  }, [onUpdateCache, onUpdateLastQuery]);
+
+  // Auto focus input when modal opens and restore last search
   useEffect(() => {
     if (visible) {
+      // Restore last search query and results
+      if (lastSearchQuery) {
+        setSearchQuery(lastSearchQuery);
+        
+        // Try to load results from cache
+        const cachedResults = loadFromCache(lastSearchQuery);
+        if (cachedResults) {
+          setSearchResults(cachedResults);
+          setIsCachedResult(true);
+        }
+      }
+      
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
-    } else {
-      // Reset state when modal closes
-      setSearchQuery('');
-      setSearchResults([]);
     }
-  }, [visible]);
+    // DON'T reset when closing - keep query and results for next time
+  }, [visible, lastSearchQuery, loadFromCache]);
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim() || !currentUserId) {
       setSearchResults([]);
+      setIsCachedResult(false);
       return;
     }
     
+    // Save query for next time modal opens
+    onUpdateLastQuery(searchQuery);
+    
+    // Check cache first
+    const cachedResults = loadFromCache(searchQuery);
+    if (cachedResults) {
+      setSearchResults(cachedResults);
+      setIsCachedResult(true);
+      return;
+    }
+    
+    // No cache, fetch from API
     setLoading(true);
+    setIsCachedResult(false);
     try {
       const response = await messageService.semanticSearch(searchQuery, 20);
-
+      const results = response.results || [];
       
-      setSearchResults(response.results || []);
-    } catch (error) {
-      console.error('Search failed:', error);
+      setSearchResults(results);
+      
+      // Save to cache
+      if (results.length > 0) {
+        saveToCache(searchQuery, results);
+      }
+    } catch {
       setSearchResults([]);
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, currentUserId]);
+  }, [searchQuery, currentUserId, loadFromCache, saveToCache, onUpdateLastQuery]);
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -140,7 +233,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <SearchOutlined style={{ fontSize: 28, color: 'white' }} />
-          <div>
+          <div style={{ flex: 1 }}>
             <Text strong style={{ fontSize: 20, color: 'white', margin: 0, display: 'block' }}>
               Semantic Search
             </Text>
@@ -148,6 +241,17 @@ const SearchModal: React.FC<SearchModalProps> = ({
               Find messages by meaning, not just keywords
             </Text>
           </div>
+          <Tooltip title="Clear search cache">
+            <Button 
+              type="text" 
+              icon={<DeleteOutlined />}
+              onClick={clearCache}
+              style={{ 
+                color: 'white',
+                opacity: 0.8,
+              }}
+            />
+          </Tooltip>
         </div>
         
         <Input
@@ -159,11 +263,20 @@ const SearchModal: React.FC<SearchModalProps> = ({
           onKeyPress={handleKeyPress}
           prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
           suffix={
-            searchQuery && (
-              <Tag color="blue" style={{ fontSize: 12, marginRight: 0 }}>
-                {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
-              </Tag>
-            )
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {isCachedResult && (
+                <Tooltip title="Results from cache (instant)">
+                  <Tag icon={<ThunderboltFilled />} color="gold" style={{ fontSize: 11, marginRight: 0 }}>
+                    Cached
+                  </Tag>
+                </Tooltip>
+              )}
+              {searchQuery && (
+                <Tag color="blue" style={{ fontSize: 12, marginRight: 0 }}>
+                  {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
+                </Tag>
+              )}
+            </div>
           }
           style={{
             borderRadius: 12,

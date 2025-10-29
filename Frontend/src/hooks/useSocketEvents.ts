@@ -244,7 +244,7 @@ export const useSocketEvents = ({
     });
 
     // Handle ai_stream_end
-    socket.on("ai_stream_end", ({ message_id, real_message_id, full_content, conversation_id }) => {
+    socket.on("ai_stream_end", ({ message_id, real_message_id, full_content, conversation_id, suggestions }) => {
 
       
       if (aiResponseTimeoutRef.current) {
@@ -268,7 +268,8 @@ export const useSocketEvents = ({
                   content: full_content, 
                   isStreaming: false, 
                   status: 'sent' as const,
-                  isTemp: false
+                  isTemp: false,
+                  suggestions: suggestions || undefined // ✅ Store suggestions
                 }
               : m
           );
@@ -282,7 +283,8 @@ export const useSocketEvents = ({
                     content: full_content, 
                     isStreaming: false, 
                     status: 'sent' as const,
-                    isTemp: false
+                    isTemp: false,
+                    suggestions: suggestions || undefined // ✅ Store suggestions
                   }
                 : m
             );
@@ -307,7 +309,8 @@ export const useSocketEvents = ({
           conversationId: conversation_id,
           messageId: message_id,
           realMessageId: real_message_id || message_id,
-          fullContent: full_content
+          fullContent: full_content,
+          suggestions: suggestions // ✅ Broadcast suggestions to other tabs
         }
       });
 

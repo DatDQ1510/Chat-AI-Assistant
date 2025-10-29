@@ -12,6 +12,7 @@ interface MessageListProps {
   isLoadingMore?: boolean;
   onRetryMessage?: (messageId: string) => void; // ✅ Retry failed messages
   onToggleImportant?: (messageId: string, important: boolean) => void; // ✅ Toggle important status
+  onSuggestionClick?: (suggestion: string) => void; // ✅ Handle suggestion clicks
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -23,6 +24,7 @@ const MessageList: React.FC<MessageListProps> = ({
   isLoadingMore = false,
   onRetryMessage,
   onToggleImportant,
+  onSuggestionClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollHeightBeforeLoad = useRef(0);
@@ -92,6 +94,7 @@ const MessageList: React.FC<MessageListProps> = ({
           onCopy={onCopyMessage}
           onRetry={onRetryMessage}
           onToggleImportant={onToggleImportant}
+          onSuggestionClick={onSuggestionClick}
         />
       ))}
 

@@ -31,6 +31,7 @@ class GeneratorService {
 
     return chunkGenerator();
   }
+
   async simpleReply(prompt: string): Promise<string> {
     const response = await this.model.chat.completions.create({
       model: "gpt-4o-mini",
@@ -40,6 +41,37 @@ class GeneratorService {
     });
     return response.choices[0]?.message?.content || "";
   }
+  // ... streamReply cũ giữ nguyên
+
+  // generator.service.ts
+  async getFullJsonResponse(
+    systemPrompt: string,
+    userPrompt: string
+  ): Promise<{ answer: string; suggestions: string[] }> {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" }, // BẬT JSON MODE
+      temperature: 0.7,
+    });
+
+    const content = response.choices[0].message.content;
+
+    try {
+      // content là chuỗi JSON → parse thành object
+      return JSON.parse(content || "{}");
+    } catch (error) {
+      console.error("JSON parse error:", error, "Raw content:", content);
+      return {
+        answer: "Xin lỗi, đã xảy ra lỗi khi xử lý phản hồi.",
+        suggestions: [],
+      };
+    }
+  }
+
 }
 
 export const generatorService = new GeneratorService();

@@ -3,6 +3,7 @@ import { Input, Button, message, Typography, Image, Space, Spin } from 'antd';
 import { SendOutlined, PaperClipOutlined, BulbOutlined, CloseCircleOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, PlayCircleOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { ChatInputProps, AttachedFile } from '../../types/chat';
 import uploadService from '../../services/upload.service';
+import SelectedTextPreview from './SelectedTextPreview'; // ✅ Import preview component
 
 const { TextArea } = Input;
 
@@ -10,6 +11,8 @@ const { TextArea } = Input;
 export interface ChatInputRef {
   setInputValue: (value: string) => void;
   focusInput: () => void;
+  setSelectedText: (text: string) => void; // ✅ New method to set selected text
+  clearSelectedText: () => void; // ✅ New method to clear selected text
 }
 
 const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
@@ -20,6 +23,7 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
   const [inputValue, setInputValue] = useState('');
   const [suggestMode, setSuggestMode] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [selectedText, setSelectedText] = useState(''); // ✅ Store selected text for preview
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,6 +34,12 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
     },
     focusInput: () => {
       textAreaRef.current?.focus();
+    },
+    setSelectedText: (text: string) => {
+      setSelectedText(text);
+    },
+    clearSelectedText: () => {
+      setSelectedText('');
     },
   }));
 
@@ -46,7 +56,12 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
     // ✅ Filter only successfully uploaded files (have URL)
     const successfullyUploadedFiles = attachedFiles.filter(f => f.url && !f.uploadError);
     
-    if (!trimmedValue && successfullyUploadedFiles.length === 0) {
+    // ✅ Combine input value with selected text if exists
+    const finalMessage = selectedText 
+      ? (trimmedValue ? `${selectedText}\n\n${trimmedValue}` : selectedText)
+      : trimmedValue;
+    
+    if (!finalMessage && successfullyUploadedFiles.length === 0) {
       if (isLoading) return;
       message.warning('Please type a message or upload files');
       return;
@@ -54,12 +69,13 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
 
     // Pass only successfully uploaded files with URLs
     onSendMessage(
-      trimmedValue || '📎 Files attached', 
+      finalMessage || '📎 Files attached', 
       suggestMode,
       successfullyUploadedFiles.length > 0 ? successfullyUploadedFiles : undefined
     );
     
     setInputValue('');
+    setSelectedText(''); // ✅ Clear selected text after sending
     setAttachedFiles([]);
     
     // Reset suggest mode after sending
@@ -69,6 +85,17 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto';
     }
+  };
+
+  // ✅ Handler for sending selected text directly
+  const handleSendSelectedText = () => {
+    if (!selectedText) return;
+    handleSend();
+  };
+
+  // ✅ Handler for clearing selected text
+  const handleClearSelectedText = () => {
+    setSelectedText('');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -210,6 +237,13 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
       gap: 8,
       paddingTop: 8,
     }}>
+      {/* ✅ Selected Text Preview - Shows above file attachments */}
+      <SelectedTextPreview
+        selectedText={selectedText}
+        onClear={handleClearSelectedText}
+        onSend={handleSendSelectedText}
+      />
+
       {/* File Preview Area */}
       {attachedFiles.length > 0 && (
         <div style={{

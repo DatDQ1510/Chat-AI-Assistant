@@ -190,7 +190,6 @@ export class MessageService {
     query: string,
     limit: number = 5,
     conversationId?: string,
-    relevanceThreshold: number = 0.5 // Minimum relevance score (0-1 scale, lower distance = higher relevance)
   ) {
     
     // 1️⃣ Create embedding for the query
@@ -201,7 +200,6 @@ export class MessageService {
       queryEmbedding,
       limit,
       conversationId,
-      relevanceThreshold
     );
 
     // 3️⃣ Return results (empty array if no matches above threshold)

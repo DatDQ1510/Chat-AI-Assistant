@@ -3,10 +3,11 @@ import { Button, Typography, Tooltip, Spin, Image, Space } from 'antd';
 import { CopyOutlined, UserOutlined, RobotOutlined, ReloadOutlined, CheckCircleOutlined, ExclamationCircleOutlined, StarOutlined, StarFilled, FileOutlined, FilePdfOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import type { MessageProps } from '../../types/chat';
+import SuggestionButtons from './SuggestionButtons'; // ✅ Import suggestion buttons
 
 const { Text } = Typography;
 
-const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, onToggleImportant }) => {
+const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, onToggleImportant, onSuggestionClick }) => {
 
   const isUser = msg.role === 'user';
 
@@ -294,6 +295,15 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
             />
           </Tooltip>
         </div>
+
+        {/* ✅ Suggestion buttons (only for AI messages with suggestions) */}
+        {!isUser && msg.suggestions && msg.suggestions.length > 0 && onSuggestionClick && (
+          <SuggestionButtons
+            suggestions={msg.suggestions}
+            onSuggestionClick={onSuggestionClick}
+            isLoading={msg.isStreaming}
+          />
+        )}
       </div>
     </div>
   );

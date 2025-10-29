@@ -20,8 +20,8 @@ export const createSocketServer = (httpServer: HTTPServer): Server => {
       origin: ["http://localhost:5173", "http://localhost:5174"],
       credentials: true
     },
-    pingTimeout: 10000,
-    pingInterval: 25000,
+    pingTimeout: 5000,
+    pingInterval: 10000,
 
   });
   return io;
