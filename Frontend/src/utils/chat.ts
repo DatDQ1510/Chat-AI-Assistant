@@ -6,8 +6,6 @@ interface RawMessage {
   sender_type: string;
   content: string;
   updatedAt?: string;
-  updatedAt?: string;
-  createdAt?: string;
   createdAt?: string;
 }
 
@@ -15,5 +13,5 @@ export const formatMessage = (msg: RawMessage): Message => ({
   id: msg.id,
   role: msg.sender_type === "user" ? "user" : "assistant",
   content: msg.content || "",
-  timestamp: new Date(msg.updatedAt || msg.updatedAt || msg.createdAt || msg.createdAt || new Date()),
+  timestamp: new Date(msg.updatedAt || msg.createdAt || new Date()),
 });

@@ -70,7 +70,7 @@ class ChatSocketHandler {
     try {
       // Validation
       if (!conversation_id || !content?.trim()) {
-        return this.sendError(callback, "Invalid conversation_id or empty content", 400);
+        return this.sendError("Invalid conversation_id or empty content", 400, callback);
       }
 
       // Xử lý file (nếu có)
@@ -114,7 +114,7 @@ class ChatSocketHandler {
       // STEP 4: Get AI response
       await this.handleAIResponse(conversation_id, content, user_id, needs_suggestions, text_file_urls, aiMessageId);
     } catch (err: any) {
-      this.sendError(callback, err.message ?? "Internal server error", 500);
+      this.sendError(err.message ?? "Internal server error", 500, callback);
     }
   }
 
@@ -260,7 +260,7 @@ class ChatSocketHandler {
   }
 
   // Helper: Send error response
-  private sendError(callback?: (response: ErrorResponse) => void, error: string, errorCode: number): void {
+  private sendError( error: string, errorCode: number,callback?: (response: ErrorResponse) => void): void {
     if (callback) {
       callback({ success: false, error, errorCode });
     }

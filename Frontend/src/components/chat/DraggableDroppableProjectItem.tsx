@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { List, Typography, Tooltip, Button, Dropdown, Input, Modal, Spin } from 'antd';
+import { Typography, Tooltip, Button, Dropdown, Input, Modal, Spin } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   RightOutlined,
@@ -10,6 +11,8 @@ import {
   EllipsisOutlined,
   EditOutlined,
   DeleteOutlined,
+  PlusOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons';
 import type { ProjectItemProps } from '../../types/chat';
 import DraggableProjectConversationItem from './DraggableProjectConversationItem';
@@ -25,8 +28,10 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
   onDelete,
   onRename,
   onConversationClick,
+  onNewChat,
   currentConversationId,
 }) => {
+  const navigate = useNavigate();
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(project.project_name);
   const [loading, setLoading] = useState(false);
@@ -136,6 +141,18 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
   };
 
   const menuItems: MenuProps['items'] = [
+    {
+      key: 'viewProject',
+      label: 'View Project',
+      icon: <FolderOpenOutlined />,
+      onClick: () => navigate(`/project/${project.id}`),
+    },
+    {
+      key: 'newChat',
+      label: 'New Chat',
+      icon: <PlusOutlined />,
+      onClick: () => onNewChat?.(project.id),
+    },
     {
       key: 'rename',
       label: 'Rename',
@@ -323,8 +340,9 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
       {isExpanded && (
         <div
           style={{
-            marginLeft: 28,
-            marginTop: 4,
+            marginLeft: 32,
+            marginTop: 8,
+            marginBottom: 8,
             animation: 'fadeIn 0.2s ease-in-out',
           }}
         >
@@ -333,25 +351,23 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
               <Spin size="small" />
             </div>
           ) : project.conversations && project.conversations.length > 0 ? (
-            <List
-              size="small"
-              dataSource={project.conversations}
-              renderItem={(conversation) => (
+            <div>
+              {project.conversations.map((conversation) => (
                 <DraggableProjectConversationItem
                   key={conversation.id}
                   conversation={conversation}
                   isActive={currentConversationId === conversation.id}
                   onClick={onConversationClick || (() => {})}
                 />
-              )}
-            />
+              ))}
+            </div>
           ) : (
             <div
               style={{
                 textAlign: 'center',
                 padding: '12px 0',
                 color: '#8c8c8c',
-                fontSize: 12,
+                fontSize: 13,
               }}
             >
               No conversations yet

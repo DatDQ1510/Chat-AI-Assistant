@@ -51,6 +51,7 @@ export const getConversationByProjectId = async (req: Request, res: Response, ne
     try {
         const { project_id } = req.params;
         const conversations = await conversationService.getConversationByProjectId(project_id);
+        console.log("Conversations by project id:", conversations);
         return res.status(200).json(successResponse(conversations, "Conversations fetched successfully"));
     } catch (error) {
         next(error);

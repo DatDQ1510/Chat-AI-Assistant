@@ -1,0 +1,233 @@
+/* MessageItem.css - Custom styles for markdown in chat bubbles */
+
+/* Override markdown renderer styles for chat context */
+.message-bubble-content .markdown-renderer {
+  font-size: 15px;
+  line-height: 1.7;
+  color: inherit; /* Use bubble color */
+}
+
+/* Adjust heading sizes for chat bubbles */
+.message-bubble-content .markdown-h1 {
+  font-size: 1.5em;
+  margin: 0.5em 0 0.3em;
+  border-bottom-color: currentColor;
+  opacity: 0.7;
+}
+
+.message-bubble-content .markdown-h2 {
+  font-size: 1.3em;
+  margin: 0.5em 0 0.3em;
+  border-bottom-color: currentColor;
+  opacity: 0.7;
+}
+
+.message-bubble-content .markdown-h3 {
+  font-size: 1.1em;
+  margin: 0.5em 0 0.3em;
+}
+
+/* Adjust code block colors for chat bubbles */
+.message-bubble-content .code-block-wrapper {
+  margin: 6px 0; /* Reduced from 12px */
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.message-bubble-content .code-block-header {
+  background: #2d2d2d;
+}
+
+.message-bubble-content .code-block-language {
+  color: #858585;
+}
+
+/* Copy button styles in chat bubbles */
+.message-bubble-content .copy-button {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.message-bubble-content .copy-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Code blocks look better with consistent dark theme */
+.message-bubble-content pre {
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  border-radius: 6px;
+}
+
+.message-bubble-content .inline-code {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+}
+
+/* For user messages (white text on blue background) */
+.message-bubble-user .inline-code {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* Adjust blockquote for chat bubbles */
+.message-bubble-content .markdown-blockquote {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-left: 3px solid currentColor;
+  opacity: 0.8;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.message-bubble-user .markdown-blockquote {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Adjust links for chat bubbles */
+.message-bubble-content .markdown-link {
+  color: #0ea5e9;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.message-bubble-user .markdown-link {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* Adjust tables for chat bubbles */
+.message-bubble-content .table-wrapper {
+  margin: 4px 0; /* Reduced from 8px to 4px - minimal spacing */
+  overflow-x: auto;
+  background: transparent; /* Transparent in chat bubbles */
+  padding: 0;
+  box-shadow: none;
+}
+
+.message-bubble-content .table-header {
+  margin-bottom: 6px;
+}
+
+.message-bubble-content .markdown-table {
+  font-size: 13px;
+  border-collapse: collapse;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.message-bubble-user .markdown-table {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.message-bubble-content .markdown-table th {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  font-weight: 600;
+}
+
+.message-bubble-content .markdown-table td {
+  padding: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure no striped rows in chat bubbles */
+.message-bubble-content .markdown-table tr:nth-child(even) {
+  background: transparent;
+}
+
+.message-bubble-content .markdown-table tr:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Adjust lists for chat bubbles */
+.message-bubble-content ul,
+.message-bubble-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.message-bubble-content li {
+  margin: 4px 0;
+}
+
+/* Adjust paragraphs for chat bubbles */
+.message-bubble-content p {
+  margin: 4px 0; /* Reduced from 8px to 4px */
+}
+
+.message-bubble-content p:first-child {
+  margin-top: 0;
+}
+
+.message-bubble-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Remove excessive spacing in chat bubbles */
+.message-bubble-content .markdown-renderer > *:first-child {
+  margin-top: 0 !important;
+}
+
+.message-bubble-content .markdown-renderer > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Adjust images for chat bubbles */
+.message-bubble-content .markdown-image-wrapper {
+  margin: 12px 0;
+}
+
+.message-bubble-content .markdown-image {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.message-bubble-content .markdown-image-caption {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* Animation for message fade in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Blinking cursor animation for streaming */
+@keyframes blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .message-bubble-content .markdown-renderer {
+    font-size: 14px;
+  }
+  
+  .message-bubble-content .code-block-wrapper {
+    font-size: 12px;
+  }
+  
+  .message-bubble-content .markdown-table {
+    font-size: 12px;
+  }
+}

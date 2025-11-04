@@ -2,11 +2,19 @@ import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database.js";
 import { User } from "./user.model.js";
 
+interface ProjectAttachment {
+  return_url: string;
+  public_id: string;
+  data: string; // nội dung hoặc đoạn text trích từ file
+  summary?: string | null; // nếu file dài
+}
 interface ProjectAttributes {
   id: string;
   project_name: string;
   description?: string | null;
   user_id: string;
+  attachments?: ProjectAttachment[] | null;
+  custom_fields?: Record<string, any> | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -19,6 +27,8 @@ export class Project extends Model<ProjectAttributes, ProjectCreationAttributes>
   public project_name!: string;
   public description?: string | null;
   public user_id!: string;
+  public attachments?: ProjectAttachment[] | null;
+  public custom_fields?: Record<string, any> | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
   
@@ -48,6 +58,14 @@ Project.init(
       },
       onDelete: "CASCADE",
     },
+    attachments: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
+    custom_fields: {
+      type: DataTypes.JSONB,  
+      allowNull: true,
+    }
   },
   {
     sequelize,

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, List, Typography, Empty, Spin, Space, Tag } from 'antd';
+import { Modal, List, Typography, Empty, Spin, Space, Tag, Tooltip } from 'antd';
 import { StarFilled, ClockCircleOutlined, UserOutlined, RobotOutlined, CloseOutlined } from '@ant-design/icons';
 import type { Message } from '../../types/chat';
 import messageService from '../../services/message.service';
-import { chatChannel } from '../../utils/tabSync';
+import { chatChannel, broadcastToTabs } from '../../utils/tabSync';
 
 const { Text, Paragraph } = Typography;
 
@@ -12,6 +12,7 @@ interface ImportantDrawerProps {
   onClose: () => void;
   conversationId: string | null;
   onMessageClick?: (messageId: string) => void;
+  onToggleImportant?: (messageId: string, important: boolean) => void;
 }
 
 const ImportantDrawer: React.FC<ImportantDrawerProps> = ({
@@ -19,6 +20,7 @@ const ImportantDrawer: React.FC<ImportantDrawerProps> = ({
   onClose,
   conversationId,
   onMessageClick,
+  onToggleImportant,
 }) => {
   const [importantMessages, setImportantMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -98,6 +100,39 @@ const ImportantDrawer: React.FC<ImportantDrawerProps> = ({
 
   // ✅ Show ALL important messages, not just 5
   const displayMessages = importantMessages;
+
+  // Handler for toggling important status
+  const handleToggleImportant = async (messageId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering the List.Item onClick
+    
+    if (!conversationId) return;
+    
+    try {
+      // Call the API to toggle important status (set to false)
+      const result = await messageService.toggleImportant(messageId, false);
+      
+      if (result && result.success) {
+        // Update local state immediately - remove from list
+        setImportantMessages(prev => prev.filter(m => m.id !== messageId));
+        
+        // Broadcast to other tabs so they update their UI
+        broadcastToTabs({
+          type: 'toggle_important',
+          payload: { conversationId, messageId, important: false }
+        });
+        
+        // Call parent callback if provided (to update main chat UI)
+        onToggleImportant?.(messageId, false);
+        
+        // Close modal if no more important messages
+        if (importantMessages.length === 1) {
+          setTimeout(() => onClose(), 300); // Small delay for better UX
+        }
+      }
+    } catch (error) {
+      console.error('Failed to toggle important status:', error);
+    }
+  };
 
   return (
     <Modal
@@ -198,6 +233,19 @@ const ImportantDrawer: React.FC<ImportantDrawerProps> = ({
                       {formatTimestamp(message.timestamp)}
                     </Text>
                   </Space>
+                  <Tooltip title="Remove from important">
+                    <CloseOutlined 
+                      onClick={(e) => handleToggleImportant(message.id, e)}
+                      style={{ 
+                        color: '#ff4d4f', 
+                        fontSize: 14, 
+                        cursor: 'pointer',
+                        transition: 'color 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#ff7875'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#ff4d4f'}
+                    />
+                  </Tooltip>
                 </div>
 
                 {/* Content - Truncated to ~100 words */}

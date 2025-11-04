@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useMemo, useRef, useEffect, forwardRef, useImperativeHandle, type CSSProperties } from 'react';
 import { Card, Button, Typography, Empty, Avatar, Divider, Spin } from 'antd';
 import {
   PlusOutlined,
@@ -117,7 +117,21 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
 
     return 'U';
   }, [userEmail, userName]);
+  const containerStyle: CSSProperties = {
+    display: 'flex',
+    gap: 8,
+    width: '100%',
+    marginBottom: 8,
+  };
 
+  const buttonStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    height: 40,
+    fontSize: 14,
+    fontWeight: 500,
+  };
   const styles = {
     container: {
       height: '100%',
@@ -210,31 +224,31 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
         </div>
       </div>
 
+      <div style={containerStyle}>
       <Button
         type="primary"
         icon={<PlusOutlined />}
         onClick={onNewConversation}
-        block
-        style={styles.newChatButton}
+        style={{ ...buttonStyle, flex: 2, justifyContent: 'center' }}
       >
         New chat
       </Button>
 
-      {onOpenSearch && (
-        <Button
-          icon={<SearchOutlined />}
-          onClick={onOpenSearch}
-          block
-          style={{ 
-            ...styles.newChatButton, 
-            background: '#f3f4f6',
-            color: '#374151',
-            borderColor: '#e5e7eb'
-          }}
-        >
-          Search all messages
-        </Button>
-      )}
+      <Button
+        icon={<SearchOutlined />}
+        onClick={onOpenSearch}
+        style={{
+          ...buttonStyle,
+          flex: 1,
+          background: '#f3f4f6',
+          color: '#374151',
+          borderColor: '#e5e7eb',
+        }}
+      >
+        Search
+      </Button>
+    </div>
+    
 
       {/* ✅ Project Sidebar - Below Search Button */}
       <ProjectSidebar 

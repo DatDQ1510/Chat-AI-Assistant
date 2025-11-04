@@ -83,5 +83,6 @@ export interface ProjectItemProps {
   onDelete?: (id: string) => void;
   onRename?: (id: string, newName: string) => void;
   onConversationClick?: (conversationId: string) => void;
+  onNewChat?: (projectId: string) => void;
   currentConversationId?: string | null;
 }

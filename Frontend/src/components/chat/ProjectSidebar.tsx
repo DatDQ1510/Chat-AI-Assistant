@@ -85,6 +85,17 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
     }
   };
 
+  const handleNewChat = async (projectId: string) => {
+    try {
+      const conversationService = await import('../../services/conversation.service');
+      const newConv = await conversationService.default.createConversation('New conversation');
+      await conversationService.default.updateConversationProject(newConv.id, projectId);
+      navigate(`/chat/${newConv.id}`);
+    } catch (error) {
+      console.error('Failed to create new conversation in project:', error);
+    }
+  };
+
   const handleConversationClick = (conversationId: string) => {
     navigate(`/chat/${conversationId}`);
   };
@@ -218,8 +229,13 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
               style={{ padding: '20px 0' }}
             />
           ) : (
-            /* Projects List */
-            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            /* Projects List - Scroll chung cho tất cả */
+            <div style={{ 
+              maxHeight: '500px', 
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              paddingRight: 4,
+            }}>
               {projects.map((project) => (
                 <DraggableDroppableProjectItem
                   key={project.id}
@@ -229,6 +245,7 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
                   onDelete={deleteProject}
                   onRename={updateProject}
                   onConversationClick={handleConversationClick}
+                  onNewChat={handleNewChat}
                   currentConversationId={currentConversationId}
                 />
               ))}

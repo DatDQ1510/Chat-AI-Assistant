@@ -5,6 +5,7 @@ import Dashboard from '../components/Dashboard';
 import ChatContainer from '../components/chat/ChatContainer';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import SettingsPage from '../pages/SettingsPage';
+import ProjectPage from '../pages/ProjectPage';
 const PlaceholderPage: React.FC<{
   title: string;
   message: string;
@@ -75,6 +76,15 @@ const AppRoutes: React.FC = () => (
       element={
         <ProtectedRoute>
           <SettingsPage />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
+      path="/project/:projectId"
+      element={
+        <ProtectedRoute>
+          <ProjectPage />
         </ProtectedRoute>
       }
     />

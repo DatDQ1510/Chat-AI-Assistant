@@ -4,7 +4,8 @@ import { CopyOutlined, UserOutlined, RobotOutlined, ReloadOutlined, CheckCircleO
 import { message } from 'antd';
 import type { MessageProps } from '../../types/chat';
 import SuggestionButtons from './SuggestionButtons'; // ✅ Import suggestion buttons
-
+import MarkdownRenderer from '../stream/MarkdownRenderer'; // ✅ Use professional markdown renderer
+import './MessageItem.css'; // ✅ Custom styles for markdown in chat bubbles
 const { Text } = Typography;
 
 const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, onToggleImportant, onSuggestionClick }) => {
@@ -91,6 +92,13 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
         maxWidth: '100%',
         border: msg.important ? '2px solid #a78bfa' : 'none',
       } as React.CSSProperties,
+      markdownWrapper: {
+        fontSize: 15,
+        lineHeight: 1.7,
+        color: msg.important
+          ? (isUser ? '#ffffff' : '#92400e')
+          : (isUser ? '#ffffff' : '#1f2937'),
+      } as React.CSSProperties,
       actions: {
         display: 'flex',
         justifyContent: isUser ? 'flex-end' : 'flex-start',
@@ -102,8 +110,19 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
   
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(msg.content);
-      message.success('Message copied to clipboard');
+      // Get the rendered content as plain text from the DOM
+      const messageElement = document.getElementById(`message-${msg.id}`);
+      const markdownContent = messageElement?.querySelector('.markdown-renderer');
+      
+      if (markdownContent) {
+        // Copy the rendered text content (not HTML)
+        const textContent = markdownContent.textContent || msg.content;
+        await navigator.clipboard.writeText(textContent);
+      } else {
+        // Fallback to original content if markdown not found
+        await navigator.clipboard.writeText(msg.content);
+      }
+      
       onCopy?.(msg.content);
     } catch {
       message.error('Failed to copy message');
@@ -138,7 +157,10 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
           </Text>
         </div>
         
-        <div style={styles.bubble}>
+        <div 
+          style={styles.bubble}
+          className={`message-bubble-content ${isUser ? 'message-bubble-user' : 'message-bubble-assistant'}`}
+        >
           {/* ✅ Attachments - Images first */}
           {msg.attachments && msg.attachments.length > 0 && (
             <div style={{ marginBottom: msg.content ? 12 : 0 }}>
@@ -199,9 +221,9 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
 
           {/* Message content */}
           {msg.content && (
-            <Text style={{ color: isUser ? '#ffffff' : '#1f2937' }}>
-              {msg.content}
-            </Text>
+            <div style={styles.markdownWrapper}>
+              <MarkdownRenderer content={msg.content} />
+            </div>
           )}
           
           {msg.isStreaming && (

@@ -72,10 +72,13 @@ const getConversation = async (id: string | number) => {
 	return mapConversation(response.data.data);
 };
 
-const createConversation = async (conversationName?: string) => {
+const createConversation = async (conversationName?: string, projectId?: string | null) => {
 	const response = await axiosClient.post<ApiResponse<ConversationDto>>(
 		'v1/api/conversations',
-		{ conversation_name: conversationName }
+		{ 
+			conversation_name: conversationName,
+			project_id: projectId || null
+		}
 	);
 
 	return mapConversation(response.data.data);
