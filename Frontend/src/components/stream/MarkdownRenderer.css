@@ -1,0 +1,302 @@
+/* Markdown Renderer Styles */
+.markdown-renderer {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.6;
+  color: #333;
+  word-wrap: break-word;
+}
+
+/* Headings */
+.markdown-h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin: 0.67em 0;
+  padding-bottom: 0.3em;
+  border-bottom: 2px solid #eaecef;
+}
+
+.markdown-h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin: 0.83em 0;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #eaecef;
+}
+
+.markdown-h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 1em 0;
+}
+
+/* Code Blocks */
+.code-block-wrapper {
+  margin: 8px 0; /* Reduced from 16px */
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1e1e1e;
+  border: 1px solid #3c3c3c;
+  position: relative;
+}
+
+.code-block-header {
+  background: #2d2d2d;
+  padding: 8px 16px;
+  border-bottom: 1px solid #3c3c3c;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.code-block-language {
+  font-size: 12px;
+  font-weight: 600;
+  color: #858585;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Copy Button Styles */
+.copy-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #d4d4d4;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.copy-button:active {
+  transform: scale(0.95);
+}
+
+.code-block-wrapper pre {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  background: #1e1e1e;
+}
+
+.code-block-wrapper code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d4d4d4;
+}
+
+/* Inline Code */
+.inline-code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.9em;
+  padding: 2px 6px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  color: #e83e8c;
+}
+
+/* Links */
+.markdown-link {
+  color: #0366d6;
+  text-decoration: none;
+  transition: all 0.2s;
+  margin: 0 2px; /* Reduced margin */
+}
+
+.markdown-link:hover {
+  text-decoration: underline;
+  color: #0256c5;
+}   
+
+/* Tables */
+.table-wrapper {
+  overflow-x: auto;
+  margin: 4px 0; /* Reduced from 8px to 4px */
+  position: relative;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.table-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.markdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.markdown-table th {
+  background: #f6f8fa;
+  font-weight: 600;
+  padding: 12px 16px;
+  border: 1px solid #d0d7de;
+  text-align: left;
+}
+
+.markdown-table td {
+  padding: 12px 16px;
+  border: 1px solid #d0d7de;
+}
+
+/* Remove the dark striped rows - keep all rows same background */
+.markdown-table tr:nth-child(even) {
+  background: transparent;
+}
+
+.markdown-table tr:hover {
+  background: #edf2f7;
+}
+
+/* Blockquotes */
+.markdown-blockquote {
+  margin: 16px 0;
+  padding: 8px 16px;
+  border-left: 4px solid #dfe2e5;
+  background: #f6f8fa;
+  color: #6a737d;
+}
+
+.markdown-blockquote p {
+  margin: 8px 0;
+}
+
+/* Images */
+.markdown-image-wrapper {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.markdown-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.markdown-image-caption {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #6a737d;
+  font-style: italic;
+}
+
+/* Lists */
+.markdown-renderer ul,
+.markdown-renderer ol {
+  padding-left: 24px;
+  margin: 8px 0; /* Reduced from 12px to 8px */
+}
+
+.markdown-renderer li {
+  margin: 4px 0;
+}
+
+/* Paragraphs */
+.markdown-renderer p {
+  margin: 4px 0; /* Reduced from 8px to 4px */
+}
+
+/* Remove margins for first/last children to prevent gaps */
+.markdown-renderer > *:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-renderer > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Horizontal Rule */
+.markdown-renderer hr {
+  height: 1px;
+  background: #e1e4e8;
+  border: none;
+  margin: 24px 0;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .markdown-renderer {
+    color: #d4d4d4;
+  }
+
+  .markdown-h1,
+  .markdown-h2 {
+    border-color: #3c3c3c;
+  }
+
+  .inline-code {
+    background: #2d2d2d;
+    border-color: #3c3c3c;
+    color: #ff79c6;
+  }
+
+  .markdown-link {
+    color: #58a6ff;
+  }
+
+  .markdown-link:hover {
+    color: #79b8ff;
+  }
+
+  .markdown-table th {
+    background: #2d2d2d;
+    border-color: #3c3c3c;
+  }
+
+  .markdown-table td {
+    border-color: #3c3c3c;
+  }
+
+  /* Remove dark striped rows in dark mode too */
+  .markdown-table tr:nth-child(even) {
+    background: transparent;
+  }
+
+  .markdown-table tr:hover {
+    background: #2d2d2d;
+  }
+
+  .markdown-blockquote {
+    border-color: #3c3c3c;
+    background: #2d2d2d;
+    color: #858585;
+  }
+
+  .markdown-renderer hr {
+    background: #3c3c3c;
+  }
+
+  /* Dark mode for table wrapper and copy buttons */
+  .table-wrapper {
+    background: #1e1e1e;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .copy-button {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .copy-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+}

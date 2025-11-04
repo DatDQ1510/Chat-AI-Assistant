@@ -1,0 +1,31 @@
+# Node modules (sẽ cài trong container)
+node_modules
+
+# Build output (TypeScript compiled files)
+dist
+
+# Env files (tránh lộ thông tin nhạy cảm)
+.env
+# .env.local
+# .env.development
+# .env.production
+# .env.test
+
+# Logs
+*.log
+
+# IDE / system
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Tests / docs
+__tests__/
+*.spec.ts
+*.test.ts
+*.md

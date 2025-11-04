@@ -2,11 +2,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { message } from 'antd';
 import { Socket } from 'socket.io-client';
 import messageService from '../services/message.service';
-import type { Message, Conversation } from '../types/chat';
+import type { Message } from '../types/chat';
 
 interface UseMessagesProps {
   currentConversationId: string | null;
-  conversations: Conversation[];
+  // conversations: Conversation[]; // ✅ No longer needed
   isLoading: boolean;
   userId: string | null;
   socket: Socket | null;
@@ -16,7 +16,7 @@ interface UseMessagesProps {
 
 export const useMessages = ({
   currentConversationId,
-  conversations,
+  // conversations, // ✅ No longer needed
   isLoading,
   userId,
   socket,
@@ -46,10 +46,12 @@ export const useMessages = ({
         return;
       }
       
-      const conv = conversations.find(c => c.id === currentConversationId);
-      if (!conv) {
-        return;
-      }
+      // ✅ Remove check for conversation existence
+      // Project conversations may not be in the conversations list
+      // const conv = conversations.find(c => c.id === currentConversationId);
+      // if (!conv) {
+      //   return;
+      // }
       
       if (loadedConversationsRef.current.has(currentConversationId)) {
         return;
@@ -98,7 +100,7 @@ export const useMessages = ({
     };
 
     loadMessagesForCurrentConversation();
-  }, [currentConversationId, conversations, isLoading, setMessagesMap]);
+  }, [currentConversationId, isLoading, setMessagesMap]);
 
   // Load more messages
   const handleLoadMoreMessages = useCallback(async () => {

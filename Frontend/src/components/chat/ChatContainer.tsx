@@ -159,7 +159,7 @@ const ChatContainer: React.FC = () => {
     handleCopyMessage: hookHandleCopyMessage,
   } = useMessages({
     currentConversationId: chatState.currentConversationId,
-    conversations: chatState.conversations,
+    // conversations: chatState.conversations, // ✅ No longer needed
     isLoading: chatState.isLoading,
     userId,
     socket,
@@ -312,6 +312,63 @@ const ChatContainer: React.FC = () => {
 
     return () => abortController.abort();
   }, [isAuthReady, chatId, loadConversations]);
+
+  // ✅ Update currentConversationId when chatId changes (for navigation from ProjectPage)
+  useEffect(() => {
+    if (!chatId) return;
+    
+    // Skip if already on this conversation
+    if (chatState.currentConversationId === chatId) return;
+    
+    // Check if conversation exists in loaded conversations (both regular and project)
+    const existsInRegular = chatState.conversations.some(c => c.id === chatId);
+    
+    if (existsInRegular) {
+      // Conversation in regular list, just update currentConversationId
+      setChatState(prev => ({
+        ...prev,
+        currentConversationId: chatId,
+      }));
+      
+      // Clear loaded conversations ref to force reload messages
+      loadedConversationsRef.current.delete(chatId);
+      return;
+    }
+    
+    // Conversation not in regular list, might be project conversation
+    // Load it directly without adding to regular conversations list
+    const loadProjectConversation = async () => {
+      try {
+        const res = await conversationService.getConversation(chatId);
+        const conv = normalizeConversation(res);
+
+        // Check if it has project_id
+        if (conv.project_id) {
+          // It's a project conversation, only update currentConversationId
+          // Don't add to conversations list (it should stay in project only)
+          setChatState(prev => ({
+            ...prev,
+            currentConversationId: conv.id,
+          }));
+        } else {
+          // Regular conversation not yet loaded, add to list
+          setChatState(prev => ({
+            ...prev,
+            conversations: [conv, ...prev.conversations],
+            currentConversationId: conv.id,
+          }));
+        }
+        
+        // Clear loaded ref to force load messages
+        loadedConversationsRef.current.delete(chatId);
+      } catch (err) {
+        console.error('Failed to load conversation:', err);
+        message.error('Failed to load conversation');
+      }
+    };
+    
+    loadProjectConversation();
+  }, [chatId, chatState.currentConversationId, chatState.conversations, normalizeConversation, setChatState]);
 
   // ✅ Handle scroll to message from search/navigation
   useEffect(() => {
@@ -682,6 +739,7 @@ const ChatContainer: React.FC = () => {
         onClose={handleCloseImportant}
         conversationId={chatState.currentConversationId}
         onMessageClick={handleScrollToMessage}
+        onToggleImportant={handleToggleImportant}
       />
 
       {/* ✅ Text Selection Popover - Ask AI about selected text (only in MessageList area) */}

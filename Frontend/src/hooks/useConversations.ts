@@ -150,11 +150,22 @@ export const useConversations = ({
 
   // Select conversation
   const handleSelectConversation = useCallback(async (id: string) => {
+    // Always navigate to the conversation
     navigate(`/chat/${id}`);
     
+    // Check if conversation exists
     const exists = chatState.conversations.some(c => c.id === id);
-    if (exists) return;
+    
+    if (exists) {
+      // Conversation exists, just update currentConversationId
+      setChatState(prev => ({
+        ...prev,
+        currentConversationId: id,
+      }));
+      return;
+    }
 
+    // Conversation doesn't exist, load it
     setOperationLoading({ type: 'load', conversationId: id });
     const hide = message.loading('Loading conversation...', 0);
 
@@ -162,11 +173,21 @@ export const useConversations = ({
       const res = await conversationService.getConversation(id);
       const conv = normalizeConversation(res);
 
-      setChatState(prev => ({
-        ...prev,
-        conversations: [conv, ...prev.conversations],
-        currentConversationId: conv.id,
-      }));
+      // Only add to conversations list if it's NOT a project conversation
+      if (conv.project_id) {
+        // Project conversation - only set as current, don't add to list
+        setChatState(prev => ({
+          ...prev,
+          currentConversationId: conv.id,
+        }));
+      } else {
+        // Regular conversation - add to list
+        setChatState(prev => ({
+          ...prev,
+          conversations: [conv, ...prev.conversations],
+          currentConversationId: conv.id,
+        }));
+      }
 
       hide();
     } catch (err) {
@@ -191,6 +212,14 @@ export const useConversations = ({
         ? (remaining[0]?.id ?? null) 
         : chatState.currentConversationId;
 
+      // Update state immediately
+      setChatState(prev => ({
+        ...prev,
+        conversations: remaining,
+        currentConversationId: newCurrentId,
+      }));
+
+      // Navigate if deleted current conversation
       if (chatState.currentConversationId === id) {
         if (newCurrentId) {
           navigate(`/chat/${newCurrentId}`, { replace: true });
@@ -199,7 +228,8 @@ export const useConversations = ({
         }
       }
 
-      await loadConversations({ page: 1, append: false, selectConversationId: newCurrentId });
+      // ✅ Don't reload conversations, we already updated state
+      // await loadConversations({ page: 1, append: false, selectConversationId: newCurrentId });
 
       broadcastToTabs({
         type: 'delete_conversation',
@@ -212,11 +242,10 @@ export const useConversations = ({
       hide();
       console.error('Failed to delete conversation:', err);
       message.error('Failed to delete conversation');
-      await loadConversations({ page: 1, append: false });
     } finally {
       setOperationLoading({ type: null });
     }
-  }, [chatState.conversations, chatState.currentConversationId, loadConversations, navigate]);
+  }, [chatState.conversations, chatState.currentConversationId, navigate, setChatState]);
 
   // Rename conversation
   const handleRenameConversation = useCallback(async (id: string, newTitle: string) => {

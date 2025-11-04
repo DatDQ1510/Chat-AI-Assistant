@@ -137,6 +137,23 @@ class ProjectService {
       throw error;
     }
   }
+
+  /**
+   * Get single project by ID
+   */
+  async getProject(projectId: string): Promise<Project> {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/v1/api/projects/${projectId}`,
+        { headers: this.getAuthHeaders() }
+      );
+
+      return mapProject(response.data.data);
+    } catch (error) {
+      console.error('Failed to fetch project:', error);
+      throw error;
+    }
+  }
 }
 
 export default new ProjectService();

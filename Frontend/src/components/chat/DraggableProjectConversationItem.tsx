@@ -78,12 +78,12 @@ const DraggableProjectConversationItem: React.FC<DraggableProjectConversationIte
       ref={setNodeRef}
       style={{
         ...style,
-        padding: '6px 12px',
-        borderRadius: 6,
+        padding: '10px 16px',
+        borderRadius: 8,
         transition: 'all 0.2s',
         background: isActive ? '#e6f4ff' : 'transparent',
         border: isActive ? '1px solid #91caff' : '1px solid transparent',
-        marginBottom: 2,
+        marginBottom: 4,
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -111,20 +111,22 @@ const DraggableProjectConversationItem: React.FC<DraggableProjectConversationIte
       >
         <MessageOutlined
           style={{
-            fontSize: 15,
-            color: '#8c8c8c',
-            marginRight: 8,
+            fontSize: 16,
+            color: '#1677ff',
+            marginRight: 10,
             flexShrink: 0,
           }}
         />
         <Tooltip title={conversation.title} placement="right">
           <Text
             style={{
-              fontSize: 15,
-              color: isActive ? '#1677ff' : '#7d7b7bff',
+              fontSize: 16,
+              fontWeight: 500,
+              color: isActive ? '#1677ff' : '#262626',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              flex: 1,
             }}
           >
             {conversation.title}

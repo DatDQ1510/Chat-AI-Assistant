@@ -3,8 +3,8 @@ import ConversationRepository from "../repositories/conversation.repository";
 class ConversationService {
     private conversationRepository = ConversationRepository;
 
-    async createConversation(user_id: string, conversation_name: string) {
-        return this.conversationRepository.createConversation(user_id, conversation_name);
+    async createConversation(user_id: string, conversation_name: string, project_id?: string | null) {
+        return this.conversationRepository.createConversation(user_id, conversation_name, project_id);
     }
 
     async getConversationsByUserId(user_id: string, limit = 10, page = 1) {

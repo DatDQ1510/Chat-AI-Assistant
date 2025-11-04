@@ -9,7 +9,7 @@ import { successResponse, errorResponse } from "../utils/apiResponse.js";
  */
 export const createConversation = async (req: Request, res: Response, next: Function) => {
   try {
-    const { conversation_name } = req.body;
+    const { conversation_name, project_id } = req.body;
     const user_id = req.user?.id; // Get user_id from authenticated user
 
     if (!user_id) {
@@ -18,7 +18,8 @@ export const createConversation = async (req: Request, res: Response, next: Func
 
     const newConversation = await ConversationService.createConversation(
       user_id,
-      conversation_name
+      conversation_name,
+      project_id || null
     );
 
     res

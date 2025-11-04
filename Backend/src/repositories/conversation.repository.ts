@@ -3,17 +3,18 @@ import { Conversation } from "../models/conversation.model";
 
 class ConversationRepository {
 
-    async createConversation(user_id: string, conversation_name?: string): Promise<Conversation> {
+    async createConversation(user_id: string, conversation_name?: string, project_id?: string | null): Promise<Conversation> {
         return Conversation.create({
             user_id,
             conversation_name: conversation_name || "New Chat", // tên mặc định
+            project_id: project_id || null // Mặc định không thuộc dự án nào
         });
     }
 
 
     async getConversationsByUserId(user_id: string, limit: number, offset: number): Promise<{ rows: Conversation[]; count: number }> {
         return Conversation.findAndCountAll({
-            where: { user_id },
+            where: { user_id, project_id: null }, // Chỉ lấy các cuộc trò chuyện không thuộc dự án nào
             order: [["updatedAt", "DESC"]], // ✅ Order by most recent first
             limit,
             offset,
@@ -40,7 +41,8 @@ class ConversationRepository {
 
     async getConversationByProjectId(project_id: string): Promise<Conversation[] | null> {
         return Conversation.findAll({
-            where: { project_id }
+            where: { project_id },
+            attributes: ["conversation_name", "id", "updatedAt"],
         });
     }
     async updateConversationProject(conversation_id: string, project_id: string | null): Promise<Conversation | null> {
