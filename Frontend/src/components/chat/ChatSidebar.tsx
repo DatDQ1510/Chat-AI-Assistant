@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, forwardRef, useImperativeHandle, type CSSProperties } from 'react';
+import React, { useMemo, useRef, useEffect, forwardRef, useImperativeHandle, type CSSProperties, useState } from 'react';
 import { Card, Button, Typography, Empty, Avatar, Divider, Spin } from 'antd';
 import {
   PlusOutlined,
@@ -6,14 +6,18 @@ import {
   LogoutOutlined,
   SettingOutlined,
   UserOutlined,
+  DashboardOutlined,
+  DownOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom'; // ✅ For navigation
 import { useDroppable } from '@dnd-kit/core';
 import DraggableConversationItem from './DraggableConversationItem';
 import ProjectSidebar from './ProjectSidebar';
 import type { ProjectSidebarRef } from './ProjectSidebar'; // ✅ Type-only import
 import type { Conversation } from '../../types/chat';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface ChatSidebarProps {
   conversations: Conversation[];
@@ -57,8 +61,9 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
   isLoadingMore = false,
 }, ref) => {
 
-  const listRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null); // ✅ Ref for scrollable container
   const projectSidebarRef = useRef<ProjectSidebarRef>(null); // ✅ Ref for ProjectSidebar
+  const [isAccountExpanded, setIsAccountExpanded] = useState(false); // ✅ State for account section
   
   // ✅ Make conversations list a droppable zone to unlink from projects
   const { setNodeRef: setDroppableRef, isOver: isDropOver } = useDroppable({
@@ -84,12 +89,12 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
   }), []);
   // Handle scroll to load more conversations
   useEffect(() => {
-    const listElement = listRef.current;
-    if (!listElement || !onLoadMore || !hasMore || isLoadingMore) return;
+    const containerElement = containerRef.current;
+    if (!containerElement || !onLoadMore || !hasMore || isLoadingMore) return;
 
     const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = listElement;
-      const scrollThreshold = 100; // pixels from bottom
+      const { scrollTop, scrollHeight, clientHeight } = containerElement;
+      const scrollThreshold = 200; // pixels from bottom
       
       // Check if scrolled near bottom
       if (scrollHeight - scrollTop - clientHeight < scrollThreshold) {
@@ -97,8 +102,8 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
       }
     };
 
-    listElement.addEventListener('scroll', handleScroll);
-    return () => listElement.removeEventListener('scroll', handleScroll);
+    containerElement.addEventListener('scroll', handleScroll);
+    return () => containerElement.removeEventListener('scroll', handleScroll);
   }, [onLoadMore, hasMore, isLoadingMore]);
 
   const initials = useMemo(() => {
@@ -117,6 +122,9 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
 
     return 'U';
   }, [userEmail, userName]);
+
+  const navigate = useNavigate(); // ✅ Hook for navigation
+
   const containerStyle: CSSProperties = {
     display: 'flex',
     gap: 8,
@@ -137,19 +145,21 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      gap: 12, // ✅ Reduced from 18
-      padding: 16, // ✅ Reduced from 20
+      gap: 12,
+      padding: 16,
+      overflowY: 'auto', // ✅ Move scroll to container
+      overflowX: 'hidden',
     } as React.CSSProperties,
     header: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 12, // ✅ Reduced from 16
+      gap: 12,
     } as React.CSSProperties,
     headerInfo: {
       display: 'flex',
       alignItems: 'center',
-      gap: 10, // ✅ Reduced from 14
+      gap: 10,
       flex: 1,
       minWidth: 0,
     } as React.CSSProperties,
@@ -163,68 +173,50 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
       margin: 0,
       color: '#0f172a',
       lineHeight: 1.2,
-      fontSize: 15, // ✅ Added consistent size
+      fontSize: 15,
     } as React.CSSProperties,
     subtitle: {
       color: '#64748b',
-      fontSize: 13, // ✅ Reduced from 16
+      fontSize: 13,
     } as React.CSSProperties,
     newChatButton: {
-      borderRadius: 8, // ✅ Reduced from 20 for consistency
-      height: 40, // ✅ Reduced from 60
+      borderRadius: 8,
+      height: 40,
       fontWeight: 600,
-      fontSize: 14, // ✅ Added
+      fontSize: 14,
     } as React.CSSProperties,
     searchInput: {
-      borderRadius: 8, // ✅ Reduced from 20
-      height: 40, // ✅ Reduced from 60
+      borderRadius: 8,
+      height: 40,
     } as React.CSSProperties,
     list: {
-      flex: 1,
-      overflowY: 'auto',
+      // ✅ Remove flex: 1 and overflowY
       display: 'flex',
       flexDirection: 'column',
-      gap: 8, // ✅ Reduced from 15
-      paddingRight: 8, // ✅ Reduced from 10
+      gap: 8,
+      paddingRight: 8,
     } as React.CSSProperties,
     footer: {
       display: 'grid',
-      gap: 12, // ✅ Reduced from 20
+      gap: 12,
     } as React.CSSProperties,
     footerButton: {
-      borderRadius: 8, // ✅ Reduced from 20
-      height: 40, // ✅ Reduced from 60
-      fontSize: 14, // ✅ Added
+      borderRadius: 8,
+      height: 40,
+      fontSize: 14,
     } as React.CSSProperties,
   };
 
   return (
     <Card
       bordered={false}
-      style={{ height: '100%', borderRadius: 24, background: '#ffffff' }}
-      bodyStyle={styles.container}
+      style={{ height: '100%', borderRadius: 24, background: '#ffffff', overflow: 'hidden' }}
+      bodyStyle={{ padding: 0, height: '100%' }}
     >
-      <div style={styles.header}>
-        <div style={styles.headerInfo}>
-          <Avatar
-            size={40} // ✅ Reduced from 52
-            icon={!userName && !userEmail ? <UserOutlined /> : undefined}
-            style={{ background: '#6366f1', fontWeight: 600, fontSize: 16 }}
-          >
-            {userName || userEmail ? initials : undefined}
-          </Avatar>
-          <div style={styles.titleBlock}>
-            <Title level={4} style={styles.title} ellipsis={{ tooltip: userName || 'Your workspace' }}>
-              {userName || 'Your workspace'}
-            </Title>
-            <Text style={styles.subtitle} ellipsis={{ tooltip: userEmail || 'Ready to chat' }}>
-              {userEmail || 'Ready to chat'}
-            </Text>
-          </div>
-        </div>
-      </div>
-
-      <div style={containerStyle}>
+      {/* ✅ Scrollable container */}
+      <div ref={containerRef} style={styles.container}>
+        {/* ✅ NEW: Start with action buttons directly */}
+        <div style={containerStyle}>
       <Button
         type="primary"
         icon={<PlusOutlined />}
@@ -265,17 +257,15 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
           background: isDropOver ? '#e6f4ff' : 'transparent',
           transition: 'all 0.2s ease',
         }} 
-        ref={(node) => {
-          // Combine refs
-          if (listRef) {
-            listRef.current = node;
-          }
-          setDroppableRef(node);
-        }}
+        ref={setDroppableRef}
       >
         {conversations.length ? (
           <>
-            {conversations.map((conversation) => (
+            {conversations
+              .filter((conv, index, self) => 
+                index === self.findIndex(c => c.id === conv.id)
+              )
+              .map((conversation) => (
               <DraggableConversationItem
                 key={conversation.id}
                 conversation={conversation}
@@ -297,25 +287,149 @@ const ChatSidebar = forwardRef<ChatSidebarRef, ChatSidebarProps>(({
         )}
       </div>
 
-      <div style={styles.footer}>
-        <Button
-          icon={<SettingOutlined />}
-          onClick={onOpenSettings}
-          block
-          style={styles.footerButton}
+      {/* ✅ NEW: Collapsible Footer Section */}
+      <Divider style={{ margin: '12px 0' }} />
+      
+      {/* Header - Click to expand/collapse */}
+      <div
+        onClick={() => setIsAccountExpanded(!isAccountExpanded)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '10px 12px',
+          cursor: 'pointer',
+          borderRadius: 8,
+          transition: 'all 0.2s',
+          background: isAccountExpanded ? '#f0f2f5' : 'transparent',
+        }}
+        onMouseEnter={(e) => {
+          if (!isAccountExpanded) {
+            e.currentTarget.style.background = '#f5f5f5';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isAccountExpanded) {
+            e.currentTarget.style.background = 'transparent';
+          }
+        }}
+      >
+        {/* Toggle Arrow */}
+        <div style={{ marginRight: 10, transition: 'transform 0.2s' }}>
+          {isAccountExpanded ? (
+            <DownOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+          ) : (
+            <RightOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+          )}
+        </div>
+
+        {/* User Avatar */}
+        <Avatar
+          size={32}
+          icon={!userName && !userEmail ? <UserOutlined /> : undefined}
+          style={{ background: '#6366f1', fontWeight: 600, fontSize: 14, marginRight: 10 }}
         >
-          Settings
-        </Button>
-        <Button
-          danger
-          icon={<LogoutOutlined />}
-          onClick={onLogout}
-          block
-          style={styles.footerButton}
-        >
-          Log out
-        </Button>
+          {userName || userEmail ? initials : undefined}
+        </Avatar>
+
+        {/* User Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ 
+            fontWeight: 600, 
+            fontSize: 13, 
+            color: '#111827',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {userName || 'Your workspace'}
+          </div>
+          <div style={{ 
+            fontSize: 11, 
+            color: '#6b7280',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {userEmail || 'active session'}
+          </div>
+        </div>
       </div>
+
+      {/* Expanded Content - Action Buttons */}
+      {isAccountExpanded && (
+        <div
+          style={{
+            marginTop: 8,
+            paddingLeft: 8,
+            paddingRight: 8,
+            animation: 'slideDown 0.2s ease-out',
+          }}
+        >
+          <Button
+            icon={<DashboardOutlined />}
+            onClick={() => {
+              navigate('/dashboard');
+            }}
+            block
+            size="middle"
+            style={{ 
+              textAlign: 'left', 
+              marginBottom: 6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+            }}
+          >
+            Dashboard
+          </Button>
+          <Button
+            icon={<SettingOutlined />}
+            onClick={onOpenSettings}
+            block
+            size="middle"
+            style={{ 
+              textAlign: 'left', 
+              marginBottom: 6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+            }}
+          >
+            Settings
+          </Button>
+          <Button
+            danger
+            icon={<LogoutOutlined />}
+            onClick={onLogout}
+            block
+            size="middle"
+            style={{ 
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+            }}
+          >
+            Log out
+          </Button>
+        </div>
+      )}
+
+      <style>
+        {`
+          @keyframes slideDown {
+            from {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}
+      </style>
+      </div> {/* End scrollable container */}
     </Card>
   );
 });

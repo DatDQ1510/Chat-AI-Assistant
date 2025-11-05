@@ -18,7 +18,9 @@ export type TabSyncEvent =
   | { type: 'rename_conversation'; payload: { conversationId: string; newTitle: string } }
   | { type: 'streaming_status'; payload: { isStreaming: boolean; isWaitingForAI: boolean } }
   | { type: 'toggle_important'; payload: { conversationId: string; messageId: string; important: boolean } }
-  | { type: 'refresh_conversations'; payload: Record<string, never> }; // ✅ Simple refresh trigger
+  | { type: 'refresh_conversations'; payload: Record<string, never> }
+  | { type: 'suggestions_generated'; payload: { conversationId: string; messageId: string; suggestions: string[] } } // ✅ Suggestions event
+  | { type: 'suggestions_error'; payload: { conversationId: string; messageId: string; error: string } }; // ✅ Suggestions error event
 
 // ✅ Helper to broadcast events to other tabs
 export const broadcastToTabs = (event: TabSyncEvent) => {

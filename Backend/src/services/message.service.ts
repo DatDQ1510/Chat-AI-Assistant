@@ -18,7 +18,7 @@ export class MessageService {
 
     const count = await messageRepository.countMessagesByConversationId(conversation_id);
 
-    if (count > 0  && count % 10 === 0) {
+    if (count + 1 > 0  && (count + 1) % 10 === 0) {
        await summaryQueue.add("auto-summary", { conversationId: conversation_id });
     }
 

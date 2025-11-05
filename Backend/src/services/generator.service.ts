@@ -54,10 +54,10 @@ class GeneratorService {
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      response_format: { type: "json_object" }, // BẬT JSON MODE
+      response_format: { type: "json_object" }, 
       temperature: 0.7,
     });
-
+    console.log("Full response from OpenAI:", response);
     const content = response.choices[0].message.content;
 
     try {

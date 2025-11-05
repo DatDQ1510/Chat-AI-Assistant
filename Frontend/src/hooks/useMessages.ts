@@ -12,6 +12,7 @@ interface UseMessagesProps {
   socket: Socket | null;
   messagesMap: { [conversationId: string]: Message[] };
   setMessagesMap: React.Dispatch<React.SetStateAction<{ [conversationId: string]: Message[] }>>;
+  onSetSelectedText?: (text: string) => void; // ✅ Callback to set selected text in input
 }
 
 export const useMessages = ({
@@ -22,6 +23,7 @@ export const useMessages = ({
   socket,
   messagesMap,
   setMessagesMap,
+  onSetSelectedText,
 }: UseMessagesProps) => {
   // ✅ Use shared messagesMap from parent instead of creating own state
 

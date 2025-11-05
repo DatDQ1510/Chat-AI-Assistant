@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Project, Conversation } from '../types/chat';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 interface ProjectDto {
   id: string;

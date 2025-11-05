@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { User } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import redisConnection from "../config/redis.js";
 
 // 🧩 Lấy danh sách tất cả người dùng
 export const getUsers = async (_req: Request, res: Response) => {
@@ -68,14 +69,42 @@ export const updateUserSettings = async (req: Request, res: Response) => {
 
     const { language, writing_style, custom_instructions, roleplay_mode } = req.body;
 
+    let preferences = "";
+
     // Update fields if provided
-    if (language !== undefined) user.language = language;
-    if (writing_style !== undefined) user.writing_style = writing_style;
-    if (custom_instructions !== undefined) user.custom_instructions = custom_instructions;
-    if (roleplay_mode !== undefined) user.roleplay_mode = roleplay_mode;
+    if (language !== undefined){
+      user.language = language;
+      preferences += `language: ${language}, `;
+    } else {
+      preferences += `language: ${user.language}, `;
+    }
+
+    if (writing_style !== undefined){
+      user.writing_style = writing_style;
+      preferences += `writing_style: ${writing_style}, `;
+    } else {
+      preferences += `writing_style: ${user.writing_style}, `;
+    }
+
+    if (custom_instructions !== undefined){
+      user.custom_instructions = custom_instructions;
+      preferences += `custom_instructions: ${custom_instructions}, `;
+    } 
+    else {
+      preferences += `custom_instructions: ${user.custom_instructions}, `;
+    }
+    if (roleplay_mode !== undefined){
+      user.roleplay_mode = roleplay_mode;
+      preferences += `roleplay_mode: ${roleplay_mode}`;
+    }
+    else {
+      preferences += `roleplay_mode: ${user.roleplay_mode}`;
+    }
 
     await user.save();
-
+    const userPerferences_key = `userPreferences:${userId}`;
+    await redisConnection.setex(userPerferences_key, 24 * 60 * 60, preferences);
+    console.log("Updated user preferences cache:", preferences);
     res.json({
       message: "Settings updated successfully",
       settings: {

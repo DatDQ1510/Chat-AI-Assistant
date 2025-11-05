@@ -159,7 +159,6 @@ const ChatContainer: React.FC = () => {
     handleCopyMessage: hookHandleCopyMessage,
   } = useMessages({
     currentConversationId: chatState.currentConversationId,
-    // conversations: chatState.conversations, // ✅ No longer needed
     isLoading: chatState.isLoading,
     userId,
     socket,
@@ -182,27 +181,26 @@ const ChatContainer: React.FC = () => {
     loadedConversationsRef,
   });
 
-  // ✅ Use hook values directly (they manage the shared state)
   const finalMessagesMap = messagesMap; // Shared state updated by hooks
   const finalMessagePagination = Object.keys(hookMessagePagination).length > 0 ? hookMessagePagination : messagePagination;
   const finalIsWaitingForAI = hookIsWaitingForAI;
   const finalOperationLoading = hookOperationLoading;
   const finalConversationPagination = hookConversationPagination;
 
-  // ✅ Utility functions
   const currentConversation = useMemo(() => {
     return chatState.conversations.find(c => c.id === chatState.currentConversationId) ?? null;
   }, [chatState.conversations, chatState.currentConversationId]);
 
-  // ✅ Search modal state
   const [searchModalVisible, setSearchModalVisible] = useState(false);
+
   const [importantDrawerVisible, setImportantDrawerVisible] = useState(false);
   
-  // ✅ Search results cache - persistent across modal open/close
   const [searchResultsCache, setSearchResultsCache] = useState<SearchResultsCache>({});
   
-  // ✅ Last search query - to restore when reopening modal
   const [lastSearchQuery, setLastSearchQuery] = useState('');
+
+  // ✅ NEW: Loading state for conversation switch
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
 
   const handleOpenSearch = useCallback(() => {
     setSearchModalVisible(true);
@@ -296,9 +294,42 @@ const ChatContainer: React.FC = () => {
       return;
     }
 
-    // Send suggestion as a normal message (without files, needs_suggestions = false)
-    handleSendMessage(suggestion, false);
+    // Send suggestion as a normal message
+    handleSendMessage(suggestion);
   }, [chatState.currentConversationId, handleSendMessage]);
+
+  // ✅ Handle generate suggestions for the last AI message
+  const handleGenerateSuggestionsForLastMessage = useCallback(() => {
+    if (!chatState.currentConversationId || !socket) {
+      message.warning('Please select a conversation first');
+      return;
+    }
+
+    const conversationId = chatState.currentConversationId;
+    const messages = messagesMap[conversationId] || [];
+    const lastAI = messages.filter(m => m.role === 'assistant').pop();
+
+    if (!lastAI) {
+      message.warning('No AI message to generate suggestions for');
+      return;
+    }
+
+    // Set loading state for this message
+    setMessagesMap(prev => ({
+      ...prev,
+      [conversationId]: prev[conversationId]?.map(m =>
+        m.id === lastAI.id ? { ...m, loadingSuggestions: true } : m
+      ) || []
+    }));
+
+    // Emit socket event to generate suggestions
+    socket.emit('generate_suggestions', {
+      conversation_id: conversationId,
+      message_id: lastAI.id,
+    });
+
+    message.loading('Generating suggestions...', 1.5);
+  }, [chatState.currentConversationId, socket, messagesMap]);
 
   // ✅ Initial load: Load conversations on mount
   useEffect(() => {
@@ -312,6 +343,30 @@ const ChatContainer: React.FC = () => {
 
     return () => abortController.abort();
   }, [isAuthReady, chatId, loadConversations]);
+
+  // ✅ NEW: Show loading when switching conversations
+  useEffect(() => {
+    if (!chatId) {
+      setIsLoadingConversation(false);
+      return;
+    }
+
+    // Check if we have messages loaded for this conversation
+    const hasMessages = messagesMap[chatId] && messagesMap[chatId].length > 0;
+    
+    if (!hasMessages) {
+      setIsLoadingConversation(true);
+      
+      // Set timeout to hide loading after messages are loaded
+      const timer = setTimeout(() => {
+        setIsLoadingConversation(false);
+      }, 1500); // Max 1.5s loading
+      
+      return () => clearTimeout(timer);
+    } else {
+      setIsLoadingConversation(false);
+    }
+  }, [chatId, messagesMap]);
 
   // ✅ Update currentConversationId when chatId changes (for navigation from ProjectPage)
   useEffect(() => {
@@ -364,11 +419,18 @@ const ChatContainer: React.FC = () => {
       } catch (err) {
         console.error('Failed to load conversation:', err);
         message.error('Failed to load conversation');
+        // Navigate away from invalid conversation
+        navigate('/chat', { replace: true });
+        // Clear currentConversationId
+        setChatState(prev => ({
+          ...prev,
+          currentConversationId: null,
+        }));
       }
     };
     
     loadProjectConversation();
-  }, [chatId, chatState.currentConversationId, chatState.conversations, normalizeConversation, setChatState]);
+  }, [chatId, chatState.currentConversationId, chatState.conversations, normalizeConversation, setChatState, navigate]);
 
   // ✅ Handle scroll to message from search/navigation
   useEffect(() => {
@@ -451,6 +513,14 @@ const ChatContainer: React.FC = () => {
 
     return messages;
   }, [chatState.currentConversationId, finalMessagesMap]);
+  
+  // ✅ Calculate last AI message for suggestions button in ChatInput
+  const lastAIMessage = useMemo(() => {
+    const assistantMessages = currentMessages.filter(m => m.role === 'assistant');
+    return assistantMessages.length > 0 
+      ? assistantMessages[assistantMessages.length - 1] 
+      : undefined;
+  }, [currentMessages]);
   
   const styles = useMemo(() => ({
     page: {
@@ -648,11 +718,13 @@ const ChatContainer: React.FC = () => {
       {/* Chat Content Area */}
       <div style={styles.content}>
         <div style={{ ...styles.chatCard, position: 'relative' }}>
-          {finalOperationLoading.type && (
+          {/* ✅ Loading overlay for operations OR conversation switch */}
+          {(finalOperationLoading.type || isLoadingConversation) && (
             <div style={styles.loadingOverlay}>
               <Spin
                 size="large"
                 indicator={<LoadingOutlined style={{ fontSize: 48, color: '#1890ff' }} spin />}
+                tip={isLoadingConversation ? "Loading conversation..." : undefined}
               />
             </div>
           )}
@@ -717,6 +789,8 @@ const ChatContainer: React.FC = () => {
               onSendMessage={handleSendMessage}
               isLoading={!!finalOperationLoading.type}
               placeholder="Type your message..."
+              onGenerateSuggestions={handleGenerateSuggestionsForLastMessage} // ✅ Pass callback
+              lastAIMessage={lastAIMessage} // ✅ Pass last AI message for button state
             />
           </div>
         </div>

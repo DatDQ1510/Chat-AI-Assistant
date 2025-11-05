@@ -9,7 +9,8 @@ export interface Message {
   retryCount?: number; // Track retry attempts
   important?: boolean; // ✅ Mark message as important for semantic search
   attachments?: string[]; // ✅ File URLs attached to this message
-  suggestions?: string[]; // ✅ AI-generated follow-up questions
+  suggestions?: string[]; // ✅ AI-generated follow-up questions (3 questions)
+  loadingSuggestions?: boolean; // ✅ Loading state for suggestions generation
 }
 
 export interface Conversation {
@@ -42,9 +43,12 @@ export interface AttachedFile {
 }
 
 export interface ChatInputProps {
-  onSendMessage: (message: string, needsSuggestions?: boolean, files?: AttachedFile[]) => void;
+  onSendMessage: (message: string, files?: AttachedFile[]) => void;
   isLoading?: boolean;
   placeholder?: string;
+  // ✅ NEW: For generating suggestions on the last AI message
+  onGenerateSuggestions?: () => void; // Callback to generate suggestions
+  lastAIMessage?: Message; // Last AI message to show button state
 }
 
 export interface MessageProps {
@@ -53,6 +57,7 @@ export interface MessageProps {
   onRetry?: (messageId: string) => void; // ✅ Retry failed messages
   onToggleImportant?: (messageId: string, important: boolean) => void; // ✅ Toggle important status
   onSuggestionClick?: (suggestion: string) => void; // ✅ Handle suggestion button click
+  // ❌ REMOVED: onGenerateSuggestions - moved to ChatInput
 }
 
 export interface ConversationItemProps {
@@ -78,11 +83,9 @@ export interface Project {
 
 export interface ProjectItemProps {
   project: Project;
-  isExpanded: boolean;
-  onToggle: (id: string) => void;
+  isActive?: boolean;
+  onClick?: () => void;
   onDelete?: (id: string) => void;
   onRename?: (id: string, newName: string) => void;
-  onConversationClick?: (conversationId: string) => void;
   onNewChat?: (projectId: string) => void;
-  currentConversationId?: string | null;
 }

@@ -131,14 +131,20 @@ async createMessage(
   /**
    * Lấy context theo dạng "latest N messages"
    */
-  async getRecentMessages(conversation_id: string, limit: number) { 
-
+  async getRecentMessages(conversation_id: string, limit: number): Promise<any[]> { 
     const getRecentMessages = await Message.findAll({
       where: { conversation_id: conversation_id },
       order: [["createdAt", "DESC"]],
+      attributes: ["content", "sender_type"], // ✅ Thêm sender_type
       limit: limit,
+      offset: 1,
     });
-    return getRecentMessages.reverse();
+    const recentMessages = getRecentMessages.reverse().map(m => ({
+      content: m.content,
+      sender_type: m.sender_type
+    }));
+    console.log("Recent Messages: ", recentMessages);
+    return recentMessages;
   }
 
   async getLastSummariedIndex(conversationId: string): Promise<number> {

@@ -6,21 +6,21 @@ import type { Project, Conversation } from '../types/chat';
 interface UseProjectsReturn {
   projects: Project[];
   loading: boolean;
-  expandedProjects: Set<string>;
+  activeProjectId: string | null;
   loadingConversations: Set<string>;
   fetchProjects: () => Promise<void>;
   createProject: (name: string, description?: string) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   updateProject: (projectId: string, name: string, description?: string) => Promise<void>;
-  toggleProject: (projectId: string) => Promise<void>;
+  selectProject: (projectId: string) => Promise<void>;
   fetchProjectConversations: (projectId: string) => Promise<Conversation[]>;
-  refreshAllExpandedProjects: () => Promise<void>; // ✅ New method to refresh all
+  refreshActiveProject: () => Promise<void>;
 }
 
 export const useProjects = (): UseProjectsReturn => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
-  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [loadingConversations, setLoadingConversations] = useState<Set<string>>(new Set());
 
   /**
@@ -62,11 +62,8 @@ export const useProjects = (): UseProjectsReturn => {
     try {
       await projectService.deleteProject(projectId);
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
-      setExpandedProjects((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(projectId);
-        return newSet;
-      });
+      // If deleting active project, deselect it
+      setActiveProjectId((prev) => prev === projectId ? null : prev);
       antMessage.success('Project deleted successfully');
     } catch (error) {
 
@@ -126,55 +123,45 @@ export const useProjects = (): UseProjectsReturn => {
   }, []);
 
   /**
-   * Toggle project expansion
+   * Select/deselect project and fetch conversations on-demand
    */
-  const toggleProject = useCallback(async (projectId: string) => {
-    const isExpanded = expandedProjects.has(projectId);
+  const selectProject = useCallback(async (projectId: string) => {
+    const isActive = activeProjectId === projectId;
 
-    if (isExpanded) {
-      // Collapse
-      setExpandedProjects((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(projectId);
-        return newSet;
-      });
+    if (isActive) {
+      // Deselect
+      setActiveProjectId(null);
     } else {
-      // Expand and fetch conversations
-      setExpandedProjects((prev) => new Set(prev).add(projectId));
+      // Select and fetch conversations
+      setActiveProjectId(projectId);
       
       const project = projects.find((p) => p.id === projectId);
       if (!project?.conversations || project.conversations.length === 0) {
         await fetchProjectConversations(projectId);
       }
     }
-  }, [expandedProjects, projects, fetchProjectConversations]);
+  }, [activeProjectId, projects, fetchProjectConversations]);
 
   /**
-   * Refresh all expanded projects - Call API to get latest data
+   * Refresh active project - Call API to get latest data
    */
-  const refreshAllExpandedProjects = useCallback(async () => {
-
-    
-    // Refresh each expanded project
-    const refreshPromises = Array.from(expandedProjects).map(projectId => 
-      fetchProjectConversations(projectId)
-    );
-    
-    await Promise.all(refreshPromises);
-
-  }, [expandedProjects, fetchProjectConversations]);
+  const refreshActiveProject = useCallback(async () => {
+    if (activeProjectId) {
+      await fetchProjectConversations(activeProjectId);
+    }
+  }, [activeProjectId, fetchProjectConversations]);
 
   return {
     projects,
     loading,
-    expandedProjects,
+    activeProjectId,
     loadingConversations,
     fetchProjects,
     createProject,
     deleteProject,
     updateProject,
-    toggleProject,
+    selectProject,
     fetchProjectConversations,
-    refreshAllExpandedProjects, // ✅ Export new method
+    refreshActiveProject,
   };
 };

@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import { useProjects } from '../../hooks/useProjects';
 import DraggableDroppableProjectItem from './DraggableDroppableProjectItem'; // ✅ New component with drag support
+import DraggableConversationItem from './DraggableConversationItem'; // ✅ Import for rendering conversations
 import { useNavigate } from 'react-router-dom';
 
 const { Text } = Typography;
@@ -35,14 +36,14 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
   const {
     projects,
     loading,
-    expandedProjects,
+    activeProjectId,
     fetchProjects,
     createProject,
     deleteProject,
     updateProject,
-    toggleProject,
+    selectProject,
     fetchProjectConversations, // ✅ Get refresh function
-    refreshAllExpandedProjects, // ✅ Get refresh all function
+    refreshActiveProject, // ✅ Get refresh active function
   } = useProjects();
 
   // ✅ Expose methods to parent via ref
@@ -51,9 +52,9 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
       await fetchProjectConversations(projectId);
     },
     refreshAllProjects: async () => {
-      await refreshAllExpandedProjects();
+      await refreshActiveProject();
     },
-  }), [fetchProjectConversations, refreshAllExpandedProjects]);
+  }), [fetchProjectConversations, refreshActiveProject]);
 
   // Load projects on mount
   useEffect(() => {
@@ -88,8 +89,8 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
   const handleNewChat = async (projectId: string) => {
     try {
       const conversationService = await import('../../services/conversation.service');
-      const newConv = await conversationService.default.createConversation('New conversation');
-      await conversationService.default.updateConversationProject(newConv.id, projectId);
+      const conversation_name = 'New conversation';
+      const newConv = await conversationService.default.createConversation(conversation_name, projectId);
       navigate(`/chat/${newConv.id}`);
     } catch (error) {
       console.error('Failed to create new conversation in project:', error);
@@ -236,19 +237,38 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
               overflowX: 'hidden',
               paddingRight: 4,
             }}>
-              {projects.map((project) => (
-                <DraggableDroppableProjectItem
-                  key={project.id}
-                  project={project}
-                  isExpanded={expandedProjects.has(project.id)}
-                  onToggle={toggleProject}
-                  onDelete={deleteProject}
-                  onRename={updateProject}
-                  onConversationClick={handleConversationClick}
-                  onNewChat={handleNewChat}
-                  currentConversationId={currentConversationId}
-                />
-              ))}
+              {projects.map((project) => {
+                const isActive = activeProjectId === project.id;
+                const conversations = project.conversations || [];
+                
+                return (
+                  <div key={project.id}>
+                    {/* Project Item */}
+                    <DraggableDroppableProjectItem
+                      project={project}
+                      isActive={isActive}
+                      onClick={() => selectProject(project.id)}
+                      onDelete={deleteProject}
+                      onRename={updateProject}
+                      onNewChat={handleNewChat}
+                    />
+                    
+                    {/* Conversations - Render flat below project when active */}
+                    {isActive && conversations.length > 0 && (
+                      <div style={{ paddingLeft: 24, marginTop: 4, marginBottom: 8 }}>
+                        {conversations.map((conversation) => (
+                          <DraggableConversationItem
+                            key={conversation.id}
+                            conversation={conversation}
+                            isActive={conversation.id === currentConversationId}
+                            onClick={() => handleConversationClick(conversation.id)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

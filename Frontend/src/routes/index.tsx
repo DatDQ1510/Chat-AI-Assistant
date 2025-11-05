@@ -2,10 +2,10 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SignIn, SignUp } from '../components/auth';
 import Dashboard from '../components/Dashboard';
-import ChatContainer from '../components/chat/ChatContainer';
+import ChatLayout from '../components/chat/ChatLayout';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import SettingsPage from '../pages/SettingsPage';
-import ProjectPage from '../pages/ProjectPage';
+import ProjectsPage from '../pages/ProjectsPage';
 const PlaceholderPage: React.FC<{
   title: string;
   message: string;
@@ -58,7 +58,7 @@ const AppRoutes: React.FC = () => (
       path="/chat"
       element={
         <ProtectedRoute>
-          <ChatContainer />
+          <ChatLayout />
         </ProtectedRoute>
       }
     />
@@ -66,7 +66,7 @@ const AppRoutes: React.FC = () => (
       path="/chat/:chatId"
       element={
         <ProtectedRoute>
-          <ChatContainer />
+          <ChatLayout />
         </ProtectedRoute>
       }
     />
@@ -84,7 +84,16 @@ const AppRoutes: React.FC = () => (
       path="/project/:projectId"
       element={
         <ProtectedRoute>
-          <ProjectPage />
+          <ChatLayout />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
+      path="/projects"
+      element={
+        <ProtectedRoute>
+          <ProjectsPage />
         </ProtectedRoute>
       }
     />

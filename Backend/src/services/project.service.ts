@@ -17,6 +17,10 @@ class ProjectService {
     async updateProject(user_id: string, project_id: string, project_name: string) {
         return projectRepository.updateProject(user_id, project_id, project_name);
     }
+
+    async getProjectById(project_id: string) {
+        return projectRepository.getProjectById(project_id);
+    }
 }
 
 export default new ProjectService();
