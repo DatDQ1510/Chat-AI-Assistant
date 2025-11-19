@@ -8,11 +8,14 @@ export interface Message {
   status?: 'sending' | 'sent' | 'error'; // ✅ Message delivery status
   retryCount?: number; // Track retry attempts
   important?: boolean; // ✅ Mark message as important for semantic search
-  attachments?: string[]; // ✅ File URLs attached to this message
+  attachments?: Files[] | null; // ✅ File URLs attached to this message
   suggestions?: string[]; // ✅ AI-generated follow-up questions (3 questions)
   loadingSuggestions?: boolean; // ✅ Loading state for suggestions generation
 }
-
+export interface Files {
+  url : string | null;
+  type: string
+}
 export interface Conversation {
   id: string;
   title: string;

@@ -53,6 +53,8 @@ Message.init(
     user_id: {
       type: DataTypes.UUID,
       allowNull: true,
+      references: { model: "users", key: "id" },
+      onDelete: "CASCADE",
     },
     chatbot_id: {
       type: DataTypes.INTEGER,

@@ -5,6 +5,10 @@ import contextService from "../services/context.service.js";
 import { socketManager } from "./socket.manager.js";
 import readPdfFromUrl from "../utils/readPdf.js";
 import redisConnection from "../config/redis.js";
+import processUserMessage from "../memory/processUserMessage.js";
+import conversationStarterService from "../services/conversationStarter.service.js";
+import messageRepository from "../repositories/message.repository.js";
+import readImageTextFromUrl from "../utils/readImageText.js";
 
 // Định nghĩa types rõ ràng
 interface AttachedFile {
@@ -27,6 +31,11 @@ interface SendMessagePayload {
 interface GenerateSuggestionsPayload {
   conversation_id: string;
   message_id: string; // ID của message AI cần generate suggestions
+}
+
+// ✅ NEW: Interface for conversation starters
+interface GetConversationStartersPayload {
+  conversation_id: string;
 }
 
 interface ErrorResponse {
@@ -58,6 +67,11 @@ class ChatSocketHandler {
     // ✅ NEW: Listen for generate_suggestions event
     socket.on("generate_suggestions", (payload: GenerateSuggestionsPayload, callback?: (response: ErrorResponse) => void) => {
       this.handleGenerateSuggestions(socket, payload, callback);
+    });
+    
+    // ✅ NEW: Listen for get_conversation_starters event
+    socket.on("get_conversation_starters", (payload: GetConversationStartersPayload, callback?: (response: ErrorResponse) => void) => {
+      this.handleGetConversationStarters(socket, payload, callback);
     });
     
     socket.on("disconnect", () => this.handleDisconnect(socket, user_id));
@@ -171,8 +185,61 @@ class ChatSocketHandler {
     }
   }
 
-  private async handleSuggestIdeas(socket: Socket, payload: SendMessagePayload, callback?: (response: ErrorResponse) => void) {
+  /**
+   * ✅ NEW: Handle get_conversation_starters event
+   * Generate smart conversation starters based on user's history and memories
+   */
+  private async handleGetConversationStarters(
+    socket: Socket,
+    payload: GetConversationStartersPayload,
+    callback?: (response: ErrorResponse) => void
+  ) {
+    const { conversation_id } = payload;
     const user_id = (socket as any).user?.id;
+
+    console.log(`📋 Received get_conversation_starters for conversation: ${conversation_id}`);
+
+    try {
+      // Validation
+      if (!conversation_id || !user_id) {
+        return this.sendError("Invalid conversation_id or user_id", 400, callback);
+      }
+
+      console.log(`🎯 Generating conversation starters for user ${user_id}...`);
+
+      // Generate starters using the service
+      const starters = await conversationStarterService.generateStarters(
+        user_id,
+        conversation_id,
+        10 // Last 10 messages
+      );
+
+      console.log(`✅ Generated ${starters.length} conversation starters`);
+
+      // Send starters back to client
+      socket.emit("conversation_starters", {
+        conversation_id,
+        starters,
+      });
+
+      // Acknowledge success
+      if (callback) {
+        callback({ success: true });
+      }
+    } catch (error: any) {
+      console.error("❌ Error generating conversation starters:", error);
+      this.sendError(error.message ?? "Failed to generate starters", 500, callback);
+      
+      // Send fallback starters on error
+      socket.emit("conversation_starters", {
+        conversation_id,
+        starters: conversationStarterService.getFallbackSuggestions(),
+      });
+    }
+  }
+
+  private async handleSuggestIdeas(socket: Socket, payload: SendMessagePayload, callback?: (response: ErrorResponse) => void) {
+    const user_id =   (socket as any).user?.id;
     if (!user_id) return;
     // Implement suggest ideas logic here
     const { conversation_id } = payload;
@@ -189,8 +256,7 @@ class ChatSocketHandler {
     catch (err: any) {
       this.sendError(err.message ?? "Internal server error", 500, callback);
     }
-    
-  }
+  } 
 
   private async handleSendMessage(
     socket: Socket,
@@ -206,11 +272,23 @@ class ChatSocketHandler {
         return this.sendError("Invalid conversation_id or empty content", 400, callback);
       }
       
+      // Lấy số lượng message hiện có trong conversation
+      const count : number = await messageRepository.countMessagesByConversationId(conversation_id);
+      let recentMessages = [];
+      if(count == 0) {
+        // add context từ content của cuộc hội thoại gần đây
+        recentMessages = await messageRepository.lastMessages(10);
+
+      }
+      let contentWithRecentContext = content + recentMessages.map(m => m.content).join(" ");
       // Xử lý file (nếu có)
       let text_file_urls = "";
       if (file_urls && file_urls.length > 0) {
-        text_file_urls = await readPdfFromUrl(file_urls[0]); // TODO: Handle multiple files if needed
-      }
+        console.log("Processing file URLs for text extraction:", file_urls);
+        if((file_urls[0] as any)?.type === 'application/pdf')
+          text_file_urls = await readPdfFromUrl((file_urls[0] as any)?.url); 
+        else  text_file_urls = await readImageTextFromUrl((file_urls[0] as any)?.url); // TODO: Handle multiple files if needed
+      } 
 
       // STEP 1: Save user message
       const result = await messageService.createMessage(
@@ -221,6 +299,16 @@ class ChatSocketHandler {
         content,
         file_urls
       );
+      
+      // ✅ STEP 1.5: Process user message to extract and save memories
+      if (user_id && content.trim()) {
+        console.log("🧠 Processing user message for memory extraction...");
+        // Run in background, don't await to avoid blocking response
+        processUserMessage(user_id, content).catch((err) => {
+          console.error("❌ Error processing user message for memories:", err);
+        });
+      }
+      
       // ✅ Set cache với đúng format (content + sender_type)
       const key = `recentMessages:${conversation_id}`;
       await redisConnection.lpush(key, JSON.stringify({ 
@@ -252,7 +340,9 @@ class ChatSocketHandler {
       const aiMessageId = `ai_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
       // STEP 4: Get AI response
-      await this.handleAIResponse(conversation_id, content, user_id, text_file_urls, aiMessageId);
+      if ( count == 0) await this.handleAIResponse(conversation_id, contentWithRecentContext, user_id, text_file_urls, aiMessageId)
+      
+      else  await this.handleAIResponse(conversation_id, content, user_id, text_file_urls, aiMessageId);
     } catch (err: any) {
       this.sendError(err.message ?? "Internal server error", 500, callback);
     }
@@ -295,7 +385,6 @@ class ChatSocketHandler {
         aiFullReply = fullResponse.answer || "Không có phản hồi.";
         suggestions = fullResponse.suggestions || [];
         console.log("Parsed AI answer and suggestions:", aiFullReply, suggestions);
-        // Fake streaming: chia nhỏ answer
         const words = aiFullReply.split(" ");
         let streamedSoFar = "";
 
@@ -361,6 +450,7 @@ class ChatSocketHandler {
         });
       }
       this.emitConversationUpdated(user_id, conversation_id, "ai_replied");
+      console.log("AI responsed : " , aiFullReply );
     } catch (aiError: any) {
       this.io.to(conversation_id).emit("ai_error", {
         message_id: aiMessageId,

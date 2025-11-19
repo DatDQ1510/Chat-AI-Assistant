@@ -36,7 +36,9 @@ body {
   display: flex;
   flex-direction: column;
 }
-
+.ant-card-body {
+  padding: 0 !important;
+}
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

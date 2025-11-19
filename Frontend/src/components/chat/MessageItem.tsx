@@ -165,32 +165,33 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
           {msg.attachments && msg.attachments.length > 0 && (
             <div style={{ marginBottom: msg.content ? 12 : 0 }}>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                {msg.attachments.map((url, index) => {
-                  const fileType = getFileType(url);
-                  
+                {msg.attachments?.map((file, index) => {
+                  if (!file?.url) return null; // tránh null
+
+                  const fileType = getFileType(file.url);
+
                   if (fileType === 'image') {
                     return (
                       <Image
                         key={index}
-                        src={url}
+                        src={file.url}
                         alt={`Attachment ${index + 1}`}
-                        style={{ 
-                          borderRadius: 8, 
+                        style={{
+                          borderRadius: 8,
                           maxWidth: '100%',
                           maxHeight: 300,
-                          objectFit: 'cover'
+                          objectFit: 'cover',
                         }}
                         preview={{
-                          mask: '🔍 View full size'
+                          mask: '🔍 View full size',
                         }}
                       />
                     );
                   } else {
-                    // PDF, video, or other files - show as download link
                     return (
                       <a
                         key={index}
-                        href={url}
+                        href={file.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
@@ -198,18 +199,26 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
                           alignItems: 'center',
                           gap: 8,
                           padding: '8px 12px',
-                          background: isUser ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.05)',
+                          background: isUser
+                            ? 'rgba(255, 255, 255, 0.2)'
+                            : 'rgba(0, 0, 0, 0.05)',
                           borderRadius: 8,
                           textDecoration: 'none',
                           color: 'inherit',
                         }}
                       >
-                        {getFileIcon(url)}
-                        <Text style={{ 
-                          color: isUser ? '#ffffff' : '#1f2937',
-                          fontSize: 14
-                        }}>
-                          {fileType === 'pdf' ? '📄 PDF Document' : fileType === 'video' ? '🎥 Video File' : '📎 File'}
+                        {getFileIcon(file.url)}
+                        <Text
+                          style={{
+                            color: isUser ? '#ffffff' : '#1f2937',
+                            fontSize: 14,
+                          }}
+                        >
+                          {fileType === 'pdf'
+                            ? '📄 PDF Document'
+                            : fileType === 'video'
+                            ? '🎥 Video File'
+                            : '📎 File'}
                         </Text>
                       </a>
                     );

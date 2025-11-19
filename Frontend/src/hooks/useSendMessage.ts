@@ -3,10 +3,11 @@ import { message } from 'antd';
 import { Socket } from 'socket.io-client';
 import conversationService from '../services/conversation.service';
 import { broadcastToTabs } from '../utils/tabSync';
-import type { Message, Conversation, ChatState, AttachedFile } from '../types/chat';
+import type { Message, Conversation, ChatState, AttachedFile, Files } from '../types/chat';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyConversation = any;
+
 
 interface MessagePaginationState {
   [conversationId: string]: {
@@ -21,6 +22,7 @@ interface MessagePayload {
   conversation_id: string;
   user_id?: string | null;
   content: string;
+  file_urls?: Files[];
 }
 
 interface UseSendMessageProps {
@@ -201,8 +203,11 @@ export const useSendMessage = ({
     }
 
     // ✅ Extract URLs from already uploaded files (no need to upload again)
-    const uploadedFileUrls: string[] = files
-      ? files.filter(f => f.url).map(f => f.url!)
+    const uploadedFileUrls: Files[] = files
+      ? files.filter(f => f.url).map(f => ({
+        url: f.url || null,
+        type: f.type,
+      }))
       : [];
 
 
@@ -216,7 +221,7 @@ export const useSendMessage = ({
       isTemp: true,
       status: 'sending' as const,
       retryCount: 0,
-      attachments: uploadedFileUrls.length > 0 ? uploadedFileUrls : undefined,
+      attachments: uploadedFileUrls.length > 0 ? uploadedFileUrls : null,
     };
 
     setMessagesMap(prev => ({

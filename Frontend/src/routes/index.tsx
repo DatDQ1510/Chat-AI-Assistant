@@ -44,7 +44,6 @@ const AppRoutes: React.FC = () => (
     <Route path="/" element={<Navigate to="/signin" replace />} />
     <Route path="/signin" element={<SignIn />} />
     <Route path="/signup" element={<SignUp />} />
-
     <Route
       path="/dashboard"
       element={

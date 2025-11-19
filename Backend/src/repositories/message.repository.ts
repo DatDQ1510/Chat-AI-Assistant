@@ -186,6 +186,41 @@ async createMessage(
     });
   }
 
+
+  async lastMessages(limit: number): Promise<any[]> { 
+    const getRecentMessages = await Message.findAll({
+      order: [["createdAt", "DESC"]],
+      limit: limit,
+      attributes: ["content"],
+    });
+    return getRecentMessages;
+  }
+
+  /**
+   * Get recent messages by user in a conversation
+   * Used for generating conversation starters
+   */
+  async getRecentMessagesByUser(
+    conversation_id: string,
+    user_id: string,
+    limit: number = 10
+  ): Promise<any[]> {
+    const messages = await Message.findAll({
+      where: { 
+        conversation_id: conversation_id,
+        sender_type: "user",
+        user_id: user_id
+      },
+      order: [["createdAt", "DESC"]],
+      attributes: ["content", "createdAt"],
+      limit: limit,
+    });
+    return messages.reverse().map(m => ({
+      content: m.content,
+      createdAt: m.createdAt
+    }));
+  }
+
 }
 
 export default new MessageRepository();

@@ -1,5 +1,5 @@
 import axiosClient from '../config/axiosClient';
-import type { Message } from '../types/chat';
+import type { Files, Message } from '../types/chat';
 
 type ApiResponse<T> = {
 	success: boolean;
@@ -17,7 +17,7 @@ type MessageDto = {
 	createdAt?: string;
 	updatedAt?: string;
 	important?: boolean; // ✅ Add important field
-	file_urls?: string[]; // ✅ Attached file URLs
+	file_urls?: Files[]; // ✅ Attached file URLs
 };
 
 type PaginatedMessagesDto = {
