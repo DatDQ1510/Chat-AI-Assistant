@@ -21,6 +21,7 @@ const allowedOrigins = [
   'http://localhost:5173',     // Dev frontend
   'http://localhost:80',        // Docker frontend
   'http://localhost',           // Docker frontend without port
+  process.env.DOMAIN,           // Production domain from env
   process.env.FRONTEND_URL,     // Production URL from env
 ].filter(Boolean); // Remove undefined values
 
