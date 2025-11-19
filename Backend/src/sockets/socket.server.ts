@@ -15,22 +15,27 @@ export const createSocketServer = (httpServer: HTTPServer): Server => {
     return io;
   }
 
-  // CORS origins for Socket.IO - filter out undefined values
+  // CORS origins for Socket.IO - hardcoded production domains
   const socketOrigins: string[] = [
     'http://localhost:5173',
     'http://localhost:5174',
-    process.env.DOMAIN,           // Backend domain (same origin)
-    process.env.FRONTEND_URL,     // Frontend domain if separate
+    'https://chat-ai-assistant.onrender.com',  // Frontend domain
+    'https://chat-ai-backend.onrender.com',     // Backend domain
+    process.env.DOMAIN,
+    process.env.FRONTEND_URL,
   ].filter((origin): origin is string => Boolean(origin)); // Type guard to remove undefined
+
+  console.log('🔌 Socket.IO CORS origins:', socketOrigins);
 
   io = new Server(httpServer, {
     cors: { 
       origin: socketOrigins,
-      credentials: true
+      credentials: true,
+      methods: ['GET', 'POST'],
     },
     pingTimeout: 5000,
     pingInterval: 10000,
-
+    transports: ['websocket', 'polling'], // Enable both for better compatibility
   });
   return io;
 };

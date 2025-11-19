@@ -18,32 +18,34 @@ app.use(express.json());
 
 // CORS configuration - allow multiple origins
 const allowedOrigins = [
-  'http://localhost:5173',     // Dev frontend
-  'http://localhost:80',        // Docker frontend
-  'http://localhost',           // Docker frontend without port
-  process.env.DOMAIN,           // Production domain (Render backend URL)
-  process.env.FRONTEND_URL,     // Production frontend URL (if separate)
-].filter(Boolean); // Remove undefined values
+  'http://localhost:5173',
+  'http://localhost:80',
+  'http://localhost',
+  'https://chat-ai-assistant.onrender.com',  // Frontend domain
+  'https://chat-ai-backend.onrender.com',     // Backend domain (same-origin)
+  process.env.DOMAIN,
+  process.env.FRONTEND_URL,
+].filter((origin): origin is string => Boolean(origin)); // Type guard
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, Postman, curl)
+      // Allow requests with no origin (mobile apps, Postman)
       if (!origin) return callback(null, true);
       
-      // Allow all origins in production if no specific FRONTEND_URL set
-      if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL && !process.env.DOMAIN) {
-        return callback(null, true);
-      }
-      
       if (allowedOrigins.includes(origin)) {
+        console.log(`✅ CORS allowed: ${origin}`);
         callback(null, true);
       } else {
-        console.warn(`❌ CORS blocked origin: ${origin}`);
-        callback(null, true); // Allow anyway in production for debugging
+        console.warn(`⚠️ CORS origin not in whitelist: ${origin}`);
+        // Allow in production for now
+        callback(null, true);
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie'],
   })
 );
 
