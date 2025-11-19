@@ -32,9 +32,24 @@ const Dashboard: React.FC = () => {
   };
 
   const contentStyle: React.CSSProperties = {
-    padding: '24px',
+    padding: '48px 24px',
     minHeight: 'calc(100vh - 64px)',
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  };
+
+  const cardStyle: React.CSSProperties = {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+  };
+
+  const welcomeCardStyle: React.CSSProperties = {
+    textAlign: 'center',
+    marginBottom: '32px',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
   };
 
   return (
@@ -61,47 +76,68 @@ const Dashboard: React.FC = () => {
       </Header>
       
       <Content style={contentStyle}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <Card style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <Title level={2}>Welcome to Your Dashboard!</Title>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <Card style={welcomeCardStyle}>
+            <Title level={2} style={{ marginBottom: '12px' }}>Welcome to Your Dashboard!</Title>
             <Text type="secondary" style={{ fontSize: '16px' }}>
               You have successfully signed in. Your AI chat assistant is ready to help!
             </Text>
           </Card>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-            <Card title="Quick Start" hoverable>
-              <Text>Start chatting with your AI assistant right away.</Text>
-              <br />
-              <Button type="primary" style={{ marginTop: '16px' }} onClick={handleStartChat}>
-                Start Chat
-              </Button>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
+            gap: '24px',
+            alignItems: 'stretch',
+          }}>
+            <Card title="Quick Start" hoverable style={cardStyle}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Text style={{ marginBottom: '16px', display: 'block' }}>
+                  Start chatting with your AI assistant right away.
+                </Text>
+                <Button 
+                  type="primary" 
+                  size="large"
+                  onClick={handleStartChat}
+                  block
+                >
+                  Start Chat
+                </Button>
+              </div>
             </Card>
             
-            <Card title="Projects" hoverable>
-              <Text style={{ display: 'block', marginBottom: 12 }}>
-                Access your organized project workspaces
-              </Text>
-              
-              <Button 
-                type="primary"
-                block 
-                style={{ marginTop: '8px' }}
-                onClick={handleViewProjects}
-                icon={<FolderOutlined />}
-              >
-                View All Projects
-              </Button>
+            <Card title="Projects" hoverable style={cardStyle}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Text style={{ marginBottom: '16px', display: 'block' }}>
+                  Access your organized project workspaces
+                </Text>
+                <Button 
+                  type="primary"
+                  size="large"
+                  block 
+                  onClick={handleViewProjects}
+                  icon={<FolderOutlined />}
+                >
+                  View All Projects
+                </Button>
+              </div>
             </Card>
             
-            <Card title="Settings" hoverable>
-              <Text>Customize your chat experience and preferences.</Text>
-              <br />
-              <Button type="primary" style={{ marginTop: '16px' }} onClick={() => navigate('/settings')}>
-                View Settings
-              </Button>
+            <Card title="Settings" hoverable style={cardStyle}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Text style={{ marginBottom: '16px', display: 'block' }}>
+                  Customize your chat experience and preferences.
+                </Text>
+                <Button 
+                  type="primary" 
+                  size="large"
+                  onClick={() => navigate('/settings')}
+                  block
+                >
+                  View Settings
+                </Button>
+              </div>
             </Card>
-            
           </div>
         </div>
       </Content>

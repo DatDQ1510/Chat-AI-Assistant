@@ -5,9 +5,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "job": "npm run build && node dist/job/index.js",
-    "job:dev": "tsx watch src/job/index.ts",
+    "start:prod": "npm run build && node dist/server.js",
+    "start:with-worker": "npm run build && node dist/server.js & node dist/job/index.js",
     "dev": "nodemon",
+    "job:dev": "tsx watch src/job/index.ts",
     "lint": "eslint 'src/**/*.ts'"
   },
   "keywords": [],
