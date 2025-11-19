@@ -31,8 +31,6 @@ app.use(
   })
 );
 
-app.options("*", cors()); // Fix OPTIONS preflight
-
 app.use(cookieParser());
 
 // Health check endpoint (before auth)
