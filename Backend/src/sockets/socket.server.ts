@@ -16,14 +16,14 @@ export const createSocketServer = (httpServer: HTTPServer): Server => {
   }
 
   // CORS origins for Socket.IO - hardcoded production domains
-  const socketOrigins: string[] = [
+  const socketOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
     'https://chat-ai-assistant.onrender.com',  // Frontend domain
     'https://chat-ai-backend.onrender.com',     // Backend domain
     process.env.DOMAIN,
     process.env.FRONTEND_URL,
-  ].filter((origin): origin is string => Boolean(origin)); // Type guard to remove undefined
+  ].filter((origin): origin is string => typeof origin === 'string' && origin.length > 0);
 
   console.log('🔌 Socket.IO CORS origins:', socketOrigins);
 
