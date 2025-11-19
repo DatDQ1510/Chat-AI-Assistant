@@ -12,7 +12,6 @@ import ImportantDrawer from './ImportantDrawer';
 import SemanticChatDrawer from './SemanticChatDrawer';
 import SelectionPopover from './SelectionPopover'; // ✅ New component
 import DragAndDropProvider from './DragAndDropProvider'; // ✅ Drag & Drop
-import ConversationStarters from './ConversationStarters'; // ✅ NEW: Conversation starters
 import SettingsDrawer from './SettingsDrawer'; // ✅ NEW: Settings Drawer
 import type { Conversation, ChatState, Message } from '../../types/chat';
 import { useAuth } from '../../contexts/AuthContext';
@@ -858,16 +857,7 @@ const ChatContainer: React.FC = () => {
 
           <div style={styles.inputContainer}>
             
-            {/* ✅ Conversation Starters - shown above input ONLY when no messages */}
-            { chatState.currentConversationId && currentMessages.length === 0 && (
-              <ConversationStarters
-                socket={socket}
-                conversationId={chatState.currentConversationId}
-                onStarterClick={handleSendMessage}
-                isLoading={!!finalOperationLoading.type || finalIsWaitingForAI}
-              />
-            )}
-          
+            {/* ✅ Conversation Starters removed per user request */}
 
             <ChatInput
               ref={chatInputRef}
