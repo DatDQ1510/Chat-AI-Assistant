@@ -131,14 +131,20 @@ async createMessage(
   /**
    * Lấy context theo dạng "latest N messages"
    */
-  async getRecentMessages(conversation_id: string, limit: number) { 
-
+  async getRecentMessages(conversation_id: string, limit: number): Promise<any[]> { 
     const getRecentMessages = await Message.findAll({
       where: { conversation_id: conversation_id },
       order: [["createdAt", "DESC"]],
+      attributes: ["content", "sender_type"], // ✅ Thêm sender_type
       limit: limit,
+      offset: 1,
     });
-    return getRecentMessages.reverse();
+    const recentMessages = getRecentMessages.reverse().map(m => ({
+      content: m.content,
+      sender_type: m.sender_type
+    }));
+    console.log("Recent Messages: ", recentMessages);
+    return recentMessages;
   }
 
   async getLastSummariedIndex(conversationId: string): Promise<number> {
@@ -178,6 +184,41 @@ async createMessage(
     return await Message.findAll({
       where: { conversation_id: conversationId, important: true }
     });
+  }
+
+
+  async lastMessages(limit: number): Promise<any[]> { 
+    const getRecentMessages = await Message.findAll({
+      order: [["createdAt", "DESC"]],
+      limit: limit,
+      attributes: ["content"],
+    });
+    return getRecentMessages;
+  }
+
+  /**
+   * Get recent messages by user in a conversation
+   * Used for generating conversation starters
+   */
+  async getRecentMessagesByUser(
+    conversation_id: string,
+    user_id: string,
+    limit: number = 10
+  ): Promise<any[]> {
+    const messages = await Message.findAll({
+      where: { 
+        conversation_id: conversation_id,
+        sender_type: "user",
+        user_id: user_id
+      },
+      order: [["createdAt", "DESC"]],
+      attributes: ["content", "createdAt"],
+      limit: limit,
+    });
+    return messages.reverse().map(m => ({
+      content: m.content,
+      createdAt: m.createdAt
+    }));
   }
 
 }

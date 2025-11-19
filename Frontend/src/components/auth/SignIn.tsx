@@ -4,7 +4,7 @@ import { UserOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
 import type { SignInFormData } from '../../types/auth';
-import './signin.css';
+import './SignIn.css';
 import { login as loginService } from '../../services/auth.service';
 import { useAuth } from '../../contexts/AuthContext';
 

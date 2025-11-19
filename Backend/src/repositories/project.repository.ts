@@ -32,6 +32,11 @@ class ProjectRepository {
         );
         return Project.findOne({ where: { id: project_id, user_id } });
     }
+    async getProjectById(project_id: string): Promise<Project | null> {
+        return Project.findByPk(project_id,
+        { attributes: ["project_name", "description", "attachments", "custom_fields"] }
+        );
+    }
 }
 
 export default new ProjectRepository();

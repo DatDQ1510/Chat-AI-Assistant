@@ -5,7 +5,8 @@ import {
     deleteProject,
     updateProject,
     getConversationByProjectId,
-    updateConversationProject
+    updateConversationProject,
+    getByProjectId
 } from "../controllers/project.controller.js";
 
 const router = Router();
@@ -15,5 +16,6 @@ router.get("/", getProjectsByUserId);
 router.delete("/:project_id", deleteProject);
 router.patch("/:project_id", updateProject);
 router.get("/:project_id/conversations", getConversationByProjectId);
+router.get("/:project_id", getByProjectId);
 
 export default router;

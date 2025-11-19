@@ -1,8 +1,10 @@
 import messageRepository from "../repositories/message.repository";
-import { embeddingService } from "./embedding.service";
 import { User } from "../models/user.model";
 import {config} from "dotenv"
-import { text } from "stream/consumers";
+import redisConnection from "../config/redis";
+import conversationRepository from "../repositories/conversation.repository";
+import memoryService from "./memory.service.js";
+import { memoryRepository } from "../repositories/memory.repository";
 config();
 const MAX_CONTEXT_TOKENS = Number(process.env.MAX_CONTEXT_TOKENS ?? 3000);
 
@@ -60,19 +62,45 @@ function truncateByTokenBudget(pieces: string[], userMessage: string, maxTokens:
 
 export class ContextService {
 
-  // build context using:
-  // - recent messages (sliding window)
-  // - user preferences (language, writing_style)
-  // - suggestions flag (needs_suggestions)
   async buildPrompt(
     conversationId: string, 
     userMessage: string, 
     userId?: string | null,
-    needsSuggestions = false,
     text_file_urls?: string
   ) {
-    // 1. Recent messages
-    const recent = await messageRepository.getRecentMessages(conversationId, 5);
+
+    const key = `recentMessages:${conversationId}`;
+    let recent : any = await redisConnection.lrange(key, 0, 5);
+    
+    if (!recent.length) {
+      // Lấy từ DB và cache lại
+      const fromDb = await messageRepository.getRecentMessages(conversationId, 5); 
+      console.log("Loaded recent messages from DB:", fromDb);
+      
+      if (fromDb.length) {
+        await redisConnection.del(key);
+        for (const msg of fromDb.reverse()) {
+          await redisConnection.lpush(key, JSON.stringify(msg));
+        }
+      }
+      recent = fromDb;
+    } else {
+      recent = recent.map((m: any) => JSON.parse(m));
+    }
+
+    const summarys: string[] = [];
+    const summary_key = `summary_${conversationId}`
+    let summary : string | null = await redisConnection.get(summary_key);
+    if(!summary){
+      summary = await conversationRepository.getConversationSummary(conversationId);
+      if(summary){
+        await redisConnection.setex(summary_key, 24 * 60 * 60, summary);
+        console.log("Set summary in key : ", summary_key);
+      }
+    }
+    console.log("Loaded summary: ", summary);
+    if(summary) summarys.push(summary);
+    
     const recentTexts = recent.length > 0 
       ? recent.map((m: any) => `${m.sender_type.toUpperCase()}: ${m.content}`)
       : [];
@@ -82,9 +110,44 @@ export class ContextService {
       pdfTexts.push(text_file_urls);
     }
 
+    let memoryContext = "";
+
+    // 🧠 Nếu là câu hỏi về bản thân → chỉ TRUY VẤN memory
+    if (userId && memoryService.isPersonalQuestion(userMessage)) {
+      console.log("🧠 Personal question detected → searching memories...");
+      const relevantMemories = await memoryService.searchRelevantMemories(
+        userId,
+        userMessage,
+        5
+      );
+
+      if (relevantMemories.length > 0) {
+        memoryContext = memoryService.formatMemoriesForPrompt(relevantMemories);
+        console.log(`✅ Found ${relevantMemories.length} relevant memories`);
+      } else {
+        console.log("ℹ️ No relevant memories found");
+      }
+    }
+
+    // // 💾 Nếu là câu CUNG CẤP thông tin về bản thân → chỉ LƯU memory
+    // else if (userId && memoryService.isPersonalStatement(userMessage)) {
+    //   console.log("💾 Personal fact detected → saving to memory...");
+    //   await memoryRepository.createMemory({
+    //     user_id: userId,
+    //     content: userMessage,
+    //   });
+    //   console.log("✅ Memory saved");
+    // }
+
+
     // 2. User preferences
     let userPreferences = "";
-    if (userId) {
+    const userPerferences_key = `userPreferences:${userId}`;
+    const cachedPrefs = await redisConnection.get(userPerferences_key);
+    if (cachedPrefs) {
+      userPreferences = cachedPrefs;
+      console.log("Loaded user preferences from cache");
+    } else if (userId) {
       try {
         const user = await User.findByPk(userId, {
           attributes: ["language", "writing_style", "custom_instructions", "roleplay_mode"],
@@ -109,36 +172,19 @@ export class ContextService {
           }
 
           userPreferences = prefs;
+          // Cache preferences
+          await redisConnection.setex(userPerferences_key, 24 * 60 * 60, userPreferences);
         }
       } catch (error) {
         console.error("Error loading user preferences:", error);
       }
     }
 
-    // 3. Suggestions instruction (CHỈ KHI CẦN)
-    let suggestionsInstruction = "";
-    if (needsSuggestions) {
-      suggestionsInstruction = `
-      After providing the answer, suggest 3 to 5 follow-up questions the user might ask next.
-      Return your response in STRICT JSON format with no additional text.
-
-      {
-        "answer": "Your full answer here. Use \\n for line breaks.",
-        "suggestions": [
-          "Follow-up question 1?",
-          "Follow-up question 2?",
-          "Follow-up question 3?"
-        ]
-      }
-
-      "JSON"
-      `.trim();
-    }
-
     // 4. Merge context
     const merged = [
       ...recentTexts,
-      pdfTexts.length > 0 ? `Reference Documents Content from URLs: ${pdfTexts.join("\n")}` : null
+      pdfTexts.length > 0 ? `Reference Documents Content from URLs: ${pdfTexts.join("\n")}` : null,
+      ...summarys
     ].filter(Boolean) as string[];
 
     // 5. Truncate
@@ -149,10 +195,17 @@ export class ContextService {
       ? `You are an AI assistant. ${userPreferences}`
       : `You are an AI assistant.`;
 
-    const systemPrompt = `${baseInstruction}${suggestionsInstruction ? ' ' + suggestionsInstruction : ''}`.trim();
+    // ✅ Add memory context instruction if available
+    const memoryInstruction = memoryContext 
+      ? `\n\nIMPORTANT: Use the following information about the user when answering their questions. Always prioritize these facts over general knowledge when they relate to the user personally.`
+      : '';
+
+    const systemPrompt = `${baseInstruction}${memoryInstruction}`.trim();
     
     const history = kept.join("\n");
-    const userPrompt = `${history}\nUSER: ${userMessage}`;
+    
+    // ✅ Add memory context to user prompt
+    const userPrompt = `${history}${memoryContext}\n đây là câu hỏi hiện tại của USER: ${userMessage}`;
 
     return { systemPrompt, userPrompt };
   }

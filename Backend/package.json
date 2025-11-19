@@ -22,12 +22,8 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^24.6.2",
     "@types/pdf-parse": "^1.1.5",
-    "dotenv": "^17.2.3",
     "eslint": "^9.36.0",
-    "express": "^5.1.0",
-    "install": "^0.13.0",
     "nodemon": "^3.1.10",
-    "npm": "^11.6.1",
     "prettier": "^3.6.2",
     "sequelize-auto-migrations": "^1.0.3",
     "ts-node": "^10.9.2",
@@ -41,6 +37,8 @@
     "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
     "ioredis": "^5.8.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
@@ -52,6 +50,7 @@
     "redis": "^5.8.3",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
+    "tesseract.js": "^6.0.1",
     "uuid": "^13.0.0"
   }
 }

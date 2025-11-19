@@ -2,20 +2,25 @@
 # Stage 1: Build React app
 # ================================
 
-FROM  node:22-alpine AS builder-stage
+FROM node:22-alpine AS builder-stage
 
 WORKDIR /app
 
-COPY package*.json ./ 
+COPY package*.json ./
 
 RUN npm ci
 
+# Copy all source files and .env.production
 COPY . .
 
-ARG VITE_API_BASE_URL
+# Accept build argument from docker-compose
+ARG VITE_API_URL
 
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# Set environment variable (can be empty for production)
+# If ARG is empty, .env.production will be used by Vite
+ENV VITE_API_URL=${VITE_API_URL}
 
+# Build for production (Vite will read .env.production if ENV is empty)
 RUN npm run build
 
 # ================================

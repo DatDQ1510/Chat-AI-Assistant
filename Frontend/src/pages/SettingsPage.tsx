@@ -20,7 +20,7 @@ const SettingsPage: React.FC = () => {
     try {
       setLoading(true);
 
-      const data = await userService.getSettings();
+      const data = await userService.getUserSettings();
 
       setSettings(data);
       form.setFieldsValue({

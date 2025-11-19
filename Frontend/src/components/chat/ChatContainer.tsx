@@ -12,6 +12,7 @@ import ImportantDrawer from './ImportantDrawer';
 import SemanticChatDrawer from './SemanticChatDrawer';
 import SelectionPopover from './SelectionPopover'; // ✅ New component
 import DragAndDropProvider from './DragAndDropProvider'; // ✅ Drag & Drop
+import ConversationStarters from './ConversationStarters'; // ✅ NEW: Conversation starters
 import type { Conversation, ChatState, Message } from '../../types/chat';
 import { useAuth } from '../../contexts/AuthContext';
 import conversationService from '../../services/conversation.service'; // ✅ Re-enabled for tag updates
@@ -95,7 +96,6 @@ const ChatContainer: React.FC = () => {
   //   isLoading: false,
   //   hasMore: true,
   // });
-
   const { logout, userId, isAuthReady } = useAuth();
   const navigate = useNavigate();
   const socket = useSocket();
@@ -159,7 +159,6 @@ const ChatContainer: React.FC = () => {
     handleCopyMessage: hookHandleCopyMessage,
   } = useMessages({
     currentConversationId: chatState.currentConversationId,
-    // conversations: chatState.conversations, // ✅ No longer needed
     isLoading: chatState.isLoading,
     userId,
     socket,
@@ -182,27 +181,27 @@ const ChatContainer: React.FC = () => {
     loadedConversationsRef,
   });
 
-  // ✅ Use hook values directly (they manage the shared state)
   const finalMessagesMap = messagesMap; // Shared state updated by hooks
   const finalMessagePagination = Object.keys(hookMessagePagination).length > 0 ? hookMessagePagination : messagePagination;
   const finalIsWaitingForAI = hookIsWaitingForAI;
   const finalOperationLoading = hookOperationLoading;
   const finalConversationPagination = hookConversationPagination;
 
-  // ✅ Utility functions
   const currentConversation = useMemo(() => {
     return chatState.conversations.find(c => c.id === chatState.currentConversationId) ?? null;
   }, [chatState.conversations, chatState.currentConversationId]);
 
-  // ✅ Search modal state
   const [searchModalVisible, setSearchModalVisible] = useState(false);
+
   const [importantDrawerVisible, setImportantDrawerVisible] = useState(false);
   
-  // ✅ Search results cache - persistent across modal open/close
   const [searchResultsCache, setSearchResultsCache] = useState<SearchResultsCache>({});
   
-  // ✅ Last search query - to restore when reopening modal
   const [lastSearchQuery, setLastSearchQuery] = useState('');
+
+  // ✅ Loading state for conversation transitions
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleOpenSearch = useCallback(() => {
     setSearchModalVisible(true);
@@ -296,9 +295,42 @@ const ChatContainer: React.FC = () => {
       return;
     }
 
-    // Send suggestion as a normal message (without files, needs_suggestions = false)
-    handleSendMessage(suggestion, false);
+    // Send suggestion as a normal message
+    handleSendMessage(suggestion);
   }, [chatState.currentConversationId, handleSendMessage]);
+
+  // ✅ Handle generate suggestions for the last AI message
+  const handleGenerateSuggestionsForLastMessage = useCallback(() => {
+    if (!chatState.currentConversationId || !socket) {
+      message.warning('Please select a conversation first');
+      return;
+    }
+
+    const conversationId = chatState.currentConversationId;
+    const messages = messagesMap[conversationId] || [];
+    const lastAI = messages.filter(m => m.role === 'assistant').pop();
+
+    if (!lastAI) {
+      message.warning('No AI message to generate suggestions for');
+      return;
+    }
+
+    // Set loading state for this message
+    setMessagesMap(prev => ({
+      ...prev,
+      [conversationId]: prev[conversationId]?.map(m =>
+        m.id === lastAI.id ? { ...m, loadingSuggestions: true } : m
+      ) || []
+    }));
+
+    // Emit socket event to generate suggestions
+    socket.emit('generate_suggestions', {
+      conversation_id: conversationId,
+      message_id: lastAI.id,
+    });
+
+    message.loading('Generating suggestions...', 1.5);
+  }, [chatState.currentConversationId, socket, messagesMap]);
 
   // ✅ Initial load: Load conversations on mount
   useEffect(() => {
@@ -313,62 +345,152 @@ const ChatContainer: React.FC = () => {
     return () => abortController.abort();
   }, [isAuthReady, chatId, loadConversations]);
 
-  // ✅ Update currentConversationId when chatId changes (for navigation from ProjectPage)
+  // ✅ CRITICAL: Sync currentConversationId with URL chatId immediately to prevent flicker
+  // This must run BEFORE any other effects to ensure UI shows correct conversation
   useEffect(() => {
-    if (!chatId) return;
-    
-    // Skip if already on this conversation
-    if (chatState.currentConversationId === chatId) return;
-    
-    // Check if conversation exists in loaded conversations (both regular and project)
-    const existsInRegular = chatState.conversations.some(c => c.id === chatId);
-    
-    if (existsInRegular) {
-      // Conversation in regular list, just update currentConversationId
+    if (!chatId) {
+      // No chatId in URL, clear current conversation
+      setChatState(prev => ({
+        ...prev,
+        currentConversationId: null,
+      }));
+      setIsTransitioning(false);
+      return;
+    }
+
+    // If chatId changed, immediately update currentConversationId to prevent showing old conversation
+    if (chatState.currentConversationId !== chatId) {
       setChatState(prev => ({
         ...prev,
         currentConversationId: chatId,
       }));
+    }
+  }, [chatId, chatState.currentConversationId, setChatState]);
+
+  // ✅ Handle conversation transitions with loading state
+  useEffect(() => {
+    // Don't show transition loading if there's an operation in progress
+    if (finalOperationLoading.type) {
+      setIsTransitioning(false);
+      return;
+    }
+
+    if (!chatId) {
+      setIsTransitioning(false);
+      return;
+    }
+
+    // Clear any existing timeout
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+
+    // Always show loading when chatId changes (except first mount)
+    const prevChatId = chatState.currentConversationId;
+    const isSwitching = prevChatId && prevChatId !== chatId;
+    
+    if (!isSwitching) {
+      // Not switching, just first load
+      setIsTransitioning(false);
+      return;
+    }
+
+    // We're switching - show loading overlay
+    setIsTransitioning(true);
+
+    // Check if messages are already loaded
+    const hasMessages = messagesMap[chatId] && messagesMap[chatId].length > 0;
+    
+    if (hasMessages) {
+      // Messages already cached, hide loading quickly
+      transitionTimeoutRef.current = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 200);
+    } else {
+      // No messages yet, wait for them to load (with max timeout)
+      transitionTimeoutRef.current = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 1000);
+    }
+
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [chatId, chatState.currentConversationId, messagesMap, finalOperationLoading.type]);
+
+  // ✅ Hide transition loading when messages arrive
+  useEffect(() => {
+    if (!chatId || !isTransitioning || finalOperationLoading.type) return;
+    
+    const hasMessages = messagesMap[chatId] && messagesMap[chatId].length > 0;
+    
+    if (hasMessages) {
+      // Messages loaded, hide loading after brief delay for smooth transition
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 150);
       
-      // Clear loaded conversations ref to force reload messages
-      loadedConversationsRef.current.delete(chatId);
+      return () => clearTimeout(timer);
+    }
+  }, [chatId, messagesMap, isTransitioning, finalOperationLoading.type]);
+
+  // ✅ Load conversation metadata if not in list (for project conversations)
+  useEffect(() => {
+    if (!chatId) return;
+    
+    // Check if conversation exists in loaded conversations
+    const existsInRegular = chatState.conversations.some(c => c.id === chatId);
+    
+    if (existsInRegular) {
+      // Conversation already in list, no need to load
       return;
     }
     
     // Conversation not in regular list, might be project conversation
     // Load it directly without adding to regular conversations list
+    let cancelled = false;
+    
     const loadProjectConversation = async () => {
       try {
         const res = await conversationService.getConversation(chatId);
+        
+        // Check if request was cancelled (user navigated away)
+        if (cancelled) return;
+        
         const conv = normalizeConversation(res);
 
         // Check if it has project_id
-        if (conv.project_id) {
-          // It's a project conversation, only update currentConversationId
-          // Don't add to conversations list (it should stay in project only)
-          setChatState(prev => ({
-            ...prev,
-            currentConversationId: conv.id,
-          }));
-        } else {
+        if (!conv.project_id) {
           // Regular conversation not yet loaded, add to list
           setChatState(prev => ({
             ...prev,
             conversations: [conv, ...prev.conversations],
-            currentConversationId: conv.id,
           }));
         }
-        
-        // Clear loaded ref to force load messages
-        loadedConversationsRef.current.delete(chatId);
+        // For project conversations, currentConversationId already set
       } catch (err) {
+        if (cancelled) return;
+        
         console.error('Failed to load conversation:', err);
         message.error('Failed to load conversation');
+        // Navigate away from invalid conversation
+        navigate('/chat', { replace: true });
+        // Clear currentConversationId
+        setChatState(prev => ({
+          ...prev,
+          currentConversationId: null,
+        }));
       }
     };
     
     loadProjectConversation();
-  }, [chatId, chatState.currentConversationId, chatState.conversations, normalizeConversation, setChatState]);
+    
+    return () => {
+      cancelled = true; // Cancel if effect cleanup runs (user navigated away)
+    };
+  }, [chatId, chatState.conversations, normalizeConversation, setChatState, navigate]);
 
   // ✅ Handle scroll to message from search/navigation
   useEffect(() => {
@@ -451,6 +573,14 @@ const ChatContainer: React.FC = () => {
 
     return messages;
   }, [chatState.currentConversationId, finalMessagesMap]);
+  
+  // ✅ Calculate last AI message for suggestions button in ChatInput
+  const lastAIMessage = useMemo(() => {
+    const assistantMessages = currentMessages.filter(m => m.role === 'assistant');
+    return assistantMessages.length > 0 
+      ? assistantMessages[assistantMessages.length - 1] 
+      : undefined;
+  }, [currentMessages]);
   
   const styles = useMemo(() => ({
     page: {
@@ -648,11 +778,13 @@ const ChatContainer: React.FC = () => {
       {/* Chat Content Area */}
       <div style={styles.content}>
         <div style={{ ...styles.chatCard, position: 'relative' }}>
-          {finalOperationLoading.type && (
+          {/* ✅ Loading overlay for operations AND conversation transitions */}
+          {(finalOperationLoading.type || isTransitioning) && (
             <div style={styles.loadingOverlay}>
               <Spin
                 size="large"
                 indicator={<LoadingOutlined style={{ fontSize: 48, color: '#1890ff' }} spin />}
+                tip={isTransitioning ? "Loading conversation..." : undefined}
               />
             </div>
           )}
@@ -712,11 +844,25 @@ const ChatContainer: React.FC = () => {
           </div>
 
           <div style={styles.inputContainer}>
+            
+            {/* ✅ Conversation Starters - shown above input when conversation has few/no messages */}
+            { chatState.currentConversationId && currentMessages.length <= 2 && (
+              <ConversationStarters
+                socket={socket}
+                conversationId={chatState.currentConversationId}
+                onStarterClick={handleSendMessage}
+                isLoading={!!finalOperationLoading.type || finalIsWaitingForAI}
+              />
+            )}
+          
+
             <ChatInput
               ref={chatInputRef}
               onSendMessage={handleSendMessage}
               isLoading={!!finalOperationLoading.type}
               placeholder="Type your message..."
+              onGenerateSuggestions={handleGenerateSuggestionsForLastMessage} // ✅ Pass callback
+              lastAIMessage={lastAIMessage} // ✅ Pass last AI message for button state
             />
           </div>
         </div>

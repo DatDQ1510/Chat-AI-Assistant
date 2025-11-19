@@ -4,6 +4,11 @@ import { generatorService } from "../services/generator.service.js";
 import contextService from "../services/context.service.js";
 import { socketManager } from "./socket.manager.js";
 import readPdfFromUrl from "../utils/readPdf.js";
+import redisConnection from "../config/redis.js";
+import processUserMessage from "../memory/processUserMessage.js";
+import conversationStarterService from "../services/conversationStarter.service.js";
+import messageRepository from "../repositories/message.repository.js";
+import readImageTextFromUrl from "../utils/readImageText.js";
 
 // Định nghĩa types rõ ràng
 interface AttachedFile {
@@ -17,9 +22,20 @@ interface AttachedFile {
 interface SendMessagePayload {
   conversation_id: string;
   user_id?: string | null;
-  content: string;
+  content?: string;
   needs_suggestions?: boolean;
   file_urls?: string[]; // Support file URLs
+}
+
+// ✅ NEW: Interface for generate_suggestions event
+interface GenerateSuggestionsPayload {
+  conversation_id: string;
+  message_id: string; // ID của message AI cần generate suggestions
+}
+
+// ✅ NEW: Interface for conversation starters
+interface GetConversationStartersPayload {
+  conversation_id: string;
 }
 
 interface ErrorResponse {
@@ -44,6 +60,20 @@ class ChatSocketHandler {
     socket.on("send_message", (payload: SendMessagePayload, callback?: (response: ErrorResponse) => void) =>
       this.handleSendMessage(socket, payload, callback)
     );
+    socket.on("suggest_ideas", (payload: SendMessagePayload, callback?: (response: ErrorResponse) => void) => {
+      this.handleSuggestIdeas(socket, payload, callback);
+    });
+    
+    // ✅ NEW: Listen for generate_suggestions event
+    socket.on("generate_suggestions", (payload: GenerateSuggestionsPayload, callback?: (response: ErrorResponse) => void) => {
+      this.handleGenerateSuggestions(socket, payload, callback);
+    });
+    
+    // ✅ NEW: Listen for get_conversation_starters event
+    socket.on("get_conversation_starters", (payload: GetConversationStartersPayload, callback?: (response: ErrorResponse) => void) => {
+      this.handleGetConversationStarters(socket, payload, callback);
+    });
+    
     socket.on("disconnect", () => this.handleDisconnect(socket, user_id));
   }
 
@@ -59,12 +89,181 @@ class ChatSocketHandler {
     socket.join(conversationId);
   }
 
+  /**
+   * ✅ NEW: Handle generate_suggestions event
+   * Generate 3 follow-up questions for a specific AI message
+   */
+  private async handleGenerateSuggestions(
+    socket: Socket,
+    payload: GenerateSuggestionsPayload,
+    callback?: (response: ErrorResponse) => void
+  ) {
+    const { conversation_id, message_id } = payload;
+    const user_id = (socket as any).user?.id;
+    console.log(`Received generate_suggestions for message: ${message_id} in conversation: ${conversation_id}`);
+    try {
+      // Validation
+      if (!conversation_id || !message_id) {
+        return this.sendError("Invalid conversation_id or message_id", 400, callback);
+      }
+
+      console.log(`🔥 Generating suggestions for message: ${message_id} in conversation: ${conversation_id}`);
+
+      
+
+      // STEP 2: Build context từ conversation history
+      const context = await contextService.buildPrompt(
+        conversation_id,
+        "Generate 3 follow-up questions based on the conversation above",
+        user_id,
+        undefined
+      );
+      console.log("Built context for suggestions:", context);
+      // STEP 3: Update system prompt để yêu cầu JSON format với suggestions
+      const suggestionsSystemPrompt = `${context.systemPrompt}
+
+      You must respond in JSON format with the following structure:
+      {
+        "suggestions": ["question 1", "question 2", "question 3"]
+      }
+
+      Generate exactly 3 follow-up questions that:
+      1. Are relevant to the conversation context
+      2. Help the user explore the topic deeper
+      3. Are concise (max 15 words each)
+      4. Are in the same language as the conversation
+
+      Example:
+      {
+        "suggestions": [
+          "Can you explain more about X?",
+          "What are the benefits of Y?",
+          "How does Z compare to other options?"
+        ]
+      }`;
+
+      const suggestionsUserPrompt = "Based on our conversation above, generate 3 relevant follow-up questions that would help me explore this topic further.";
+
+      // STEP 4: Call AI to generate suggestions (JSON format)
+      console.log("📝 Calling AI to generate suggestions...");
+      const aiResponse = await generatorService.getFullJsonResponse(
+        suggestionsSystemPrompt,
+        suggestionsUserPrompt
+      );
+      console.log("AI response for suggestions:", aiResponse);
+      const suggestions = aiResponse.suggestions || [];
+      
+      if (suggestions.length === 0) {
+        console.warn("⚠️ AI returned no suggestions");
+        return this.sendError("Failed to generate suggestions", 500, callback);
+      }
+
+      console.log(`✅ Generated ${suggestions.length} suggestions:`, suggestions);
+
+      // STEP 5: Emit suggestions_generated event to all clients in the room
+      this.io.to(conversation_id).emit("suggestions_generated", {
+        message_id,
+        conversation_id,
+        suggestions,
+      });
+      console.log("🚀 Emitted suggestions_generated event");
+      // STEP 6: Acknowledge success
+      if (callback) {
+        callback({ success: true });
+      }
+
+    } catch (error: any) {
+      console.error("❌ Error generating suggestions:", error);
+      this.sendError(error.message ?? "Failed to generate suggestions", 500, callback);
+      
+      // Emit error to frontend
+      this.io.to(conversation_id).emit("suggestions_error", {
+        message_id,
+        conversation_id,
+        error: "Failed to generate suggestions",
+      });
+    }
+  }
+
+  /**
+   * ✅ NEW: Handle get_conversation_starters event
+   * Generate smart conversation starters based on user's history and memories
+   */
+  private async handleGetConversationStarters(
+    socket: Socket,
+    payload: GetConversationStartersPayload,
+    callback?: (response: ErrorResponse) => void
+  ) {
+    const { conversation_id } = payload;
+    const user_id = (socket as any).user?.id;
+
+    console.log(`📋 Received get_conversation_starters for conversation: ${conversation_id}`);
+
+    try {
+      // Validation
+      if (!conversation_id || !user_id) {
+        return this.sendError("Invalid conversation_id or user_id", 400, callback);
+      }
+
+      console.log(`🎯 Generating conversation starters for user ${user_id}...`);
+
+      // Generate starters using the service
+      const starters = await conversationStarterService.generateStarters(
+        user_id,
+        conversation_id,
+        10 // Last 10 messages
+      );
+
+      console.log(`✅ Generated ${starters.length} conversation starters`);
+
+      // Send starters back to client
+      socket.emit("conversation_starters", {
+        conversation_id,
+        starters,
+      });
+
+      // Acknowledge success
+      if (callback) {
+        callback({ success: true });
+      }
+    } catch (error: any) {
+      console.error("❌ Error generating conversation starters:", error);
+      this.sendError(error.message ?? "Failed to generate starters", 500, callback);
+      
+      // Send fallback starters on error
+      socket.emit("conversation_starters", {
+        conversation_id,
+        starters: conversationStarterService.getFallbackSuggestions(),
+      });
+    }
+  }
+
+  private async handleSuggestIdeas(socket: Socket, payload: SendMessagePayload, callback?: (response: ErrorResponse) => void) {
+    const user_id =   (socket as any).user?.id;
+    if (!user_id) return;
+    // Implement suggest ideas logic here
+    const { conversation_id } = payload;
+    try {
+      if (!conversation_id) { 
+        return this.sendError("Invalid conversation_id", 400, callback);
+      }
+      const content = "Đưa ra 3 câu hỏi gợi ý theo nội dụng cuộc hội thoại trên";
+      const aiMessageId = `ai_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      const needs_suggestions = true;
+      const text_file_urls = "";
+      await this.handleAIResponse(conversation_id, content, user_id, text_file_urls, aiMessageId, needs_suggestions);
+    }
+    catch (err: any) {
+      this.sendError(err.message ?? "Internal server error", 500, callback);
+    }
+  } 
+
   private async handleSendMessage(
     socket: Socket,
     payload: SendMessagePayload,
     callback?: (response: ErrorResponse) => void
   ) {
-    const { conversation_id, content, needs_suggestions = false, file_urls } = payload;
+    const { conversation_id, content, file_urls } = payload;
     const user_id = (socket as any).user?.id;
 
     try {
@@ -72,12 +271,24 @@ class ChatSocketHandler {
       if (!conversation_id || !content?.trim()) {
         return this.sendError("Invalid conversation_id or empty content", 400, callback);
       }
+      
+      // Lấy số lượng message hiện có trong conversation
+      const count : number = await messageRepository.countMessagesByConversationId(conversation_id);
+      let recentMessages = [];
+      if(count == 0) {
+        // add context từ content của cuộc hội thoại gần đây
+        recentMessages = await messageRepository.lastMessages(10);
 
+      }
+      let contentWithRecentContext = content + recentMessages.map(m => m.content).join(" ");
       // Xử lý file (nếu có)
       let text_file_urls = "";
       if (file_urls && file_urls.length > 0) {
-        text_file_urls = await readPdfFromUrl(file_urls[0]); // TODO: Handle multiple files if needed
-      }
+        console.log("Processing file URLs for text extraction:", file_urls);
+        if((file_urls[0] as any)?.type === 'application/pdf')
+          text_file_urls = await readPdfFromUrl((file_urls[0] as any)?.url); 
+        else  text_file_urls = await readImageTextFromUrl((file_urls[0] as any)?.url); // TODO: Handle multiple files if needed
+      } 
 
       // STEP 1: Save user message
       const result = await messageService.createMessage(
@@ -88,6 +299,23 @@ class ChatSocketHandler {
         content,
         file_urls
       );
+      
+      // ✅ STEP 1.5: Process user message to extract and save memories
+      if (user_id && content.trim()) {
+        console.log("🧠 Processing user message for memory extraction...");
+        // Run in background, don't await to avoid blocking response
+        processUserMessage(user_id, content).catch((err) => {
+          console.error("❌ Error processing user message for memories:", err);
+        });
+      }
+      
+      // ✅ Set cache với đúng format (content + sender_type)
+      const key = `recentMessages:${conversation_id}`;
+      await redisConnection.lpush(key, JSON.stringify({ 
+        content: result.message.content,
+        sender_type: "user" 
+      }));
+      await redisConnection.ltrim(key, 0, 5);
       const userMessage = result.message;
 
       // STEP 1.5: Emit saved user message
@@ -112,7 +340,9 @@ class ChatSocketHandler {
       const aiMessageId = `ai_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
       // STEP 4: Get AI response
-      await this.handleAIResponse(conversation_id, content, user_id, needs_suggestions, text_file_urls, aiMessageId);
+      if ( count == 0) await this.handleAIResponse(conversation_id, contentWithRecentContext, user_id, text_file_urls, aiMessageId)
+      
+      else  await this.handleAIResponse(conversation_id, content, user_id, text_file_urls, aiMessageId);
     } catch (err: any) {
       this.sendError(err.message ?? "Internal server error", 500, callback);
     }
@@ -122,16 +352,15 @@ class ChatSocketHandler {
     conversation_id: string,
     content: string,
     user_id: string | null | undefined,
-    needs_suggestions: boolean,
-    text_file_urls: string,
-    aiMessageId: string
+    text_file_urls?: string,
+    aiMessageId?: string,
+    needs_suggestions: boolean = false
     ) {
     try {
       const context = await contextService.buildPrompt(
         conversation_id,
         content,
         user_id,
-        needs_suggestions,
         text_file_urls
       );
       console.log("Built context:", context);
@@ -148,7 +377,6 @@ class ChatSocketHandler {
       let suggestions: string[] = [];
 
       if (needs_suggestions) {
-        // === CÁCH MỚI: GỌI FULL RESPONSE + JSON ===
         const fullResponse = await generatorService.getFullJsonResponse(
           context.systemPrompt,
           context.userPrompt
@@ -157,7 +385,6 @@ class ChatSocketHandler {
         aiFullReply = fullResponse.answer || "Không có phản hồi.";
         suggestions = fullResponse.suggestions || [];
         console.log("Parsed AI answer and suggestions:", aiFullReply, suggestions);
-        // Fake streaming: chia nhỏ answer
         const words = aiFullReply.split(" ");
         let streamedSoFar = "";
 
@@ -175,7 +402,8 @@ class ChatSocketHandler {
         }
 
         aiFullReply = streamedSoFar;
-      } else {
+      } 
+      else {
         // === CÁCH CŨ: STREAM THẬT ===
         const stream = await generatorService.streamReply(
           context.systemPrompt,
@@ -198,27 +426,31 @@ class ChatSocketHandler {
         if (!aiFullReply.trim()) {
           aiFullReply = "Xin lỗi, tôi chưa hiểu rõ yêu cầu.";
         }
+
+        const aiMessage : any= await messageService.createMessage(
+          conversation_id,
+          "chatbot",
+          null,
+          null,
+          aiFullReply
+        );
+        // ✅ Set cache với đúng format (content + sender_type)
+        const key = `recentMessages:${conversation_id}`;
+        await redisConnection.lpush(key, JSON.stringify({ 
+          content: aiFullReply,
+          sender_type: "chatbot" 
+        }));
+        await redisConnection.ltrim(key, 0, 5);
+      
+        this.io.to(conversation_id).emit("ai_stream_end", {
+          message_id: aiMessageId,
+          real_message_id: (aiMessage as any).id,
+          full_content: aiFullReply,
+          conversation_id,
+        });
       }
-
-      // Lưu tin nhắn AI
-      const aiMessage = await messageService.createMessage(
-        conversation_id,
-        "chatbot",
-        null,
-        null,
-        aiFullReply
-      );
-
-      // Gửi kết thúc + gợi ý (nếu có)
-      this.io.to(conversation_id).emit("ai_stream_end", {
-        message_id: aiMessageId,
-        real_message_id: (aiMessage as any).id,
-        full_content: aiFullReply,
-        conversation_id,
-        suggestions: needs_suggestions ? suggestions : undefined,
-      });
-
       this.emitConversationUpdated(user_id, conversation_id, "ai_replied");
+      console.log("AI responsed : " , aiFullReply );
     } catch (aiError: any) {
       this.io.to(conversation_id).emit("ai_error", {
         message_id: aiMessageId,
@@ -227,7 +459,7 @@ class ChatSocketHandler {
         errorCode: 500,
       });
     }
-    }
+  }
 
   private handleDisconnect(socket: Socket, user_id?: string) {
     if (!user_id) return;

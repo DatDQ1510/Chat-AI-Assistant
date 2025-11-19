@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Input, Button, message, Typography, Image, Space, Spin } from 'antd';
+import type { TextAreaRef } from 'antd/es/input/TextArea';
 import { SendOutlined, PaperClipOutlined, BulbOutlined, CloseCircleOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, PlayCircleOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { ChatInputProps, AttachedFile } from '../../types/chat';
 import uploadService from '../../services/upload.service';
@@ -13,21 +14,21 @@ export interface ChatInputRef {
   focusInput: () => void;
   setSelectedText: (text: string) => void; // ✅ New method to set selected text
   clearSelectedText: () => void; // ✅ New method to clear selected text
-}
+}   
 
 const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
   onSendMessage,
   isLoading = false,
   placeholder = 'Message ChatGPT...',
+  onGenerateSuggestions, 
+  lastAIMessage,
 }, ref) => {
   const [inputValue, setInputValue] = useState('');
-  const [suggestMode, setSuggestMode] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-  const [selectedText, setSelectedText] = useState(''); // ✅ Store selected text for preview
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedText, setSelectedText] = useState(''); 
+  const textAreaRef = useRef<TextAreaRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ Expose methods để ChatContainer có thể gọi
   useImperativeHandle(ref, () => ({
     setInputValue: (value: string) => {
       setInputValue(value);
@@ -70,7 +71,6 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
     // Pass only successfully uploaded files with URLs
     onSendMessage(
       finalMessage || '📎 Files attached', 
-      suggestMode,
       successfullyUploadedFiles.length > 0 ? successfullyUploadedFiles : undefined
     );
     
@@ -78,12 +78,9 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
     setSelectedText(''); // ✅ Clear selected text after sending
     setAttachedFiles([]);
     
-    // Reset suggest mode after sending
-    if (suggestMode) setSuggestMode(false);
-    
     // Reset textarea height
-    if (textAreaRef.current) {
-      textAreaRef.current.style.height = 'auto';
+    if (textAreaRef.current?.resizableTextArea?.textArea) {
+      textAreaRef.current.resizableTextArea.textArea.style.height = 'auto';
     }
   };
 
@@ -204,10 +201,115 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
     setAttachedFiles(prev => prev.filter(f => f.uid !== uid));
   };
 
-  const handleSuggestIdeas = () => {
-    if (isLoading) return;
-    setSuggestMode(!suggestMode);
-    message.info(suggestMode ? 'Suggest mode off' : 'Suggest mode on. Next message will include suggestions');
+  // ✅ NEW: Handle paste event for images
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    // Check if clipboard contains image
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      // Only process image items
+      if (item.type.startsWith('image/')) {
+        e.preventDefault(); // Prevent default paste behavior for images
+        
+        const file = item.getAsFile();
+        if (!file) continue;
+
+        console.log('📋 Pasted image:', file.name, file.type, file.size);
+
+        // Validate file size (max 10MB)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+          message.error(`❌ Image size exceeds 10MB`);
+          continue;
+        }
+
+        // Create a proper filename for pasted image
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const extension = file.type.split('/')[1] || 'png';
+        const properFileName = `pasted-image-${timestamp}.${extension}`;
+        
+        // Create a new File object with proper name
+        const renamedFile = new File([file], properFileName, { type: file.type });
+
+        const newFile: AttachedFile = {
+          uid: Date.now().toString() + Math.random(),
+          name: properFileName,
+          type: file.type,
+          file: renamedFile,
+          uploading: true,
+        };
+
+        // Add file to state immediately
+        setAttachedFiles(prev => [...prev, newFile]);
+        message.loading(`📤 Uploading pasted image...`, 1);
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setAttachedFiles(prev => 
+            prev.map(f => 
+              f.uid === newFile.uid 
+                ? { ...f, preview: event.target?.result as string }
+                : f
+            )
+          );
+        };
+        reader.readAsDataURL(renamedFile);
+
+        // Upload to Cloudinary
+        try {
+          const result = await uploadService.uploadFile(renamedFile);
+          
+          if (result.success && result.url) {
+            setAttachedFiles(prev => 
+              prev.map(f => 
+                f.uid === newFile.uid 
+                  ? { ...f, url: result.url, uploading: false }
+                  : f
+              )
+            );
+            message.success(`✅ Image uploaded successfully!`);
+          } else {
+            setAttachedFiles(prev => 
+              prev.map(f => 
+                f.uid === newFile.uid 
+                  ? { ...f, uploading: false, uploadError: result.error || 'Upload failed' }
+                  : f
+              )
+            );
+            message.error(`❌ Upload failed: ${result.error || 'Unknown error'}`);
+          }
+        } catch (error) {
+          console.error('Upload error:', error);
+          setAttachedFiles(prev => 
+            prev.map(f => 
+              f.uid === newFile.uid 
+                ? { ...f, uploading: false, uploadError: 'Upload failed' }
+                : f
+            )
+          );
+          message.error(`❌ Upload failed`);
+        }
+      }
+    }
+  };
+
+  // ✅ NEW: Generate suggestions for the last AI message
+  const handleGenerateSuggestionsClick = () => {
+    if (!onGenerateSuggestions || !lastAIMessage) {
+      message.warning('No AI message to generate suggestions for');
+      return;
+    }
+
+    if (lastAIMessage.loadingSuggestions) {
+      return; // Already generating
+    }
+
+    // Call parent handler to emit socket event and manage state
+    onGenerateSuggestions();
   };
 
   const getFileIcon = (type: string) => {
@@ -377,16 +479,30 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
 
         <Button
           icon={<BulbOutlined style={{ fontSize: 20 }} />}
-          onClick={handleSuggestIdeas}
-          disabled={isLoading}
-          title={suggestMode ? "Suggestions enabled - Click to disable" : "Click to enable AI suggestions"}
+          onClick={handleGenerateSuggestionsClick}
+          disabled={
+            isLoading //|| 
+            // !lastAIMessage || 
+            // lastAIMessage.status !== 'sent' || 
+            // lastAIMessage.loadingSuggestions ||
+            // !!lastAIMessage.suggestions // ✅ Already has suggestions
+          }
+          title={
+            !lastAIMessage 
+              ? "No AI message yet" 
+              : lastAIMessage.suggestions 
+                ? "Suggestions already generated" 
+                : lastAIMessage.loadingSuggestions 
+                  ? "Generating suggestions..." 
+                  : "Generate follow-up questions"
+          }
           style={{
-            height: 44  ,
+            height: 44,
             borderRadius: 8,
             minWidth: 44,
-            border: suggestMode ? '2px solid #f59e0b' : '1px solid #e5e7eb',
-            color: suggestMode ? '#eb4f11ff' : '#f59e0b',
-            backgroundColor: suggestMode ? '#fffbeb' : 'transparent',
+            border: lastAIMessage?.loadingSuggestions ? '2px solid #f59e0b' : '1px solid #e5e7eb',
+            color: lastAIMessage?.loadingSuggestions ? '#eb4f11ff' : '#f59e0b',
+            backgroundColor: lastAIMessage?.loadingSuggestions ? '#fffbeb' : 'transparent',
           }}
         />
 
@@ -395,6 +511,7 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
+          onPaste={handlePaste} // ✅ Handle paste for images
           placeholder={placeholder}
           autoSize={{ minRows: 1, maxRows: 6 }}
           disabled={isLoading}
@@ -429,16 +546,19 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
         textAlign: 'center',
         padding: '0 16px'
       }}>
-        {suggestMode ? (
-          <span style={{ color: '#f59e0b', fontWeight: 500 }}>
-            💡 Suggestions enabled - AI will provide follow-up questions
-          </span>
-        ) : attachedFiles.length > 0 ? (
+        {attachedFiles.length > 0 ? (
           <span style={{ color: '#0284c7', fontWeight: 500 }}>
             📎 {attachedFiles.length} file(s) ready to send
           </span>
+        ) : lastAIMessage?.loadingSuggestions ? (
+          <span style={{ color: '#f59e0b', fontWeight: 500 }}>
+            💡 Generating follow-up questions...
+          </span>
         ) : (
-          'Press Enter to send, Shift+Enter for new line'
+          <>
+            Press Enter to send, Shift+Enter for new line
+            <span style={{ color: '#10b981', marginLeft: 8 }}>• Paste images directly (Ctrl+V)</span>
+          </>
         )}
       </Typography.Text>
     </div>

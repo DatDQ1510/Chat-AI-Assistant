@@ -11,7 +11,6 @@ class ConversationRepository {
         });
     }
 
-
     async getConversationsByUserId(user_id: string, limit: number, offset: number): Promise<{ rows: Conversation[]; count: number }> {
         return Conversation.findAndCountAll({
             where: { user_id, project_id: null }, // Chỉ lấy các cuộc trò chuyện không thuộc dự án nào
@@ -92,6 +91,14 @@ class ConversationRepository {
         } catch (error: any) {
         return false;
         }
+    }
+    async getConversationSummary(conversation_id: string): Promise<string | null> {
+        const recorded = await Conversation.findByPk(conversation_id,
+            {
+                attributes: ['summary']
+            }
+        )
+        return recorded?.summary || null;
     }
 }
 export default new ConversationRepository();

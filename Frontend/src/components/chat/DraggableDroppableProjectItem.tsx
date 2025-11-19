@@ -2,11 +2,9 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Typography, Tooltip, Button, Dropdown, Input, Modal, Spin } from 'antd';
+import { Typography, Tooltip, Button, Dropdown, Input, Modal } from 'antd';
 import type { MenuProps } from 'antd';
 import {
-  RightOutlined,
-  DownOutlined,
   FolderOutlined,
   EllipsisOutlined,
   EditOutlined,
@@ -15,7 +13,6 @@ import {
   FolderOpenOutlined,
 } from '@ant-design/icons';
 import type { ProjectItemProps } from '../../types/chat';
-import DraggableProjectConversationItem from './DraggableProjectConversationItem';
 
 const { Text } = Typography;
 
@@ -23,13 +20,11 @@ const DRAG_THRESHOLD = 5; // Simple threshold như conversation
 
 const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
   project,
-  isExpanded,
-  onToggle,
+  isActive = false,
+  onClick,
   onDelete,
   onRename,
-  onConversationClick,
   onNewChat,
-  currentConversationId,
 }) => {
   const navigate = useNavigate();
   const [isRenaming, setIsRenaming] = useState(false);
@@ -63,7 +58,7 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
       type: 'project-reorder',
       project,
     },
-    disabled: !isDragActive || isExpanded, // Disable drag when expanded
+    disabled: !isDragActive, // Only enable when intentional drag
   });
 
   // Combine refs
@@ -81,9 +76,7 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
     if (
       target.closest('.ant-dropdown-trigger') ||
       target.closest('button') ||
-      target.closest('input') ||
-      target.closest('.project-toggle') ||
-      isExpanded
+      target.closest('input')
     ) {
       return;
     }
@@ -91,10 +84,10 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
     mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
     hasMovedRef.current = false;
     setIsDragActive(false);
-  }, [isExpanded]);
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!mouseDownPosRef.current || hasMovedRef.current || isExpanded) return;
+    if (!mouseDownPosRef.current || hasMovedRef.current) return;
 
     const deltaX = Math.abs(e.clientX - mouseDownPosRef.current.x);
     const deltaY = Math.abs(e.clientY - mouseDownPosRef.current.y);
@@ -104,13 +97,18 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
       hasMovedRef.current = true;
       setIsDragActive(true);
     }
-  }, [isExpanded]);
+  }, []);
 
   const handleMouseUp = useCallback(() => {
     setIsDragActive(false);
     mouseDownPosRef.current = null;
     hasMovedRef.current = false;
   }, []);
+
+  const handleProjectClick = useCallback(() => {
+    // Call parent onClick if provided
+    onClick?.();
+  }, [onClick]);
 
   const handleRename = async () => {
     if (newName.trim() && newName !== project.project_name) {
@@ -168,12 +166,10 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
     },
   ];
 
-  const conversationCount = project.conversations?.length || 0;
-
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    cursor: isDragging ? 'grabbing' : 'default',
+    cursor: isDragging ? 'grabbing' : 'pointer',
     transition: isDragging ? 'none' : 'all 0.2s ease',
     marginBottom: 4,
   };
@@ -185,55 +181,42 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        {...(isDragActive && !isExpanded ? { ...attributes, ...listeners } : {})}
+        onClick={handleProjectClick}
+        {...(isDragActive ? { ...attributes, ...listeners } : {})}
         style={{
           display: 'flex',
           alignItems: 'center',
           padding: '10px 14px',
           borderRadius: 8,
           transition: 'all 0.2s',
-          background: isDropOver
+          cursor: 'pointer',
+          background: isActive
+            ? '#e6f4ff' // Active state - blue background
+            : isDropOver
             ? '#e6f4ff'
-            : isExpanded
-            ? '#f0f2f5'
             : 'transparent',
-          border: isDropOver ? '2px dashed #1677ff' : '2px solid transparent',
-          boxShadow: isDropOver
+          border: isActive
+            ? '2px solid #1677ff' // Active state - blue border
+            : isDropOver 
+            ? '2px dashed #1677ff' 
+            : '2px solid transparent',
+          boxShadow: isActive || isDropOver
             ? '0 0 8px rgba(22, 119, 255, 0.3)'
             : 'none',
         }}
         onMouseEnter={(e) => {
-          if (!isExpanded && !isDropOver && !isDragActive) {
+          if (!isDropOver && !isDragActive && !isActive) {
             e.currentTarget.style.background = '#f5f5f5';
           }
         }}
         onMouseLeave={(e) => {
-          if (!isExpanded && !isDropOver && !isDragActive) {
+          if (!isDropOver && !isDragActive && !isActive) {
             e.currentTarget.style.background = 'transparent';
           }
           // Also handle mouse up when leaving
           handleMouseUp();
         }}
       >
-        {/* Toggle Icon */}
-        <div
-          className="project-toggle"
-          onClick={() => onToggle(project.id)}
-          style={{
-            marginRight: 10,
-            display: 'flex',
-            alignItems: 'center',
-            transition: 'transform 0.2s',
-            cursor: 'pointer',
-          }}
-        >
-          {isExpanded ? (
-            <DownOutlined style={{ fontSize: 14, color: '#8c8c8c' }} />
-          ) : (
-            <RightOutlined style={{ fontSize: 14, color: '#8c8c8c' }} />
-          )}
-        </div>
-
         {/* Folder Icon */}
         <FolderOutlined
           style={{
@@ -241,16 +224,11 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
             color: isDropOver ? '#1677ff' : '#faad14',
             marginRight: 10,
             transition: 'color 0.2s',
-            cursor: 'pointer',
           }}
-          onClick={() => onToggle(project.id)}
         />
 
         {/* Project Name */}
-        <div
-          style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
-          onClick={() => onToggle(project.id)}
-        >
+        <div style={{ flex: 1, minWidth: 0 }}>
           {isRenaming ? (
             <Input
               size="small"
@@ -299,24 +277,6 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
           </Text>
         )}
 
-        {/* Conversation Count Badge */}
-        {!isDropOver && conversationCount > 0 && (
-          <Text
-            type="secondary"
-            style={{
-              fontSize: 14,
-              marginLeft: 8,
-              marginRight: 4,
-              color: '#2a0202ff',
-              background: '#f87474ff',
-              borderRadius: 10,
-              padding: '2px 6px',
-            }}
-          >
-            {conversationCount}
-          </Text>
-        )}
-
         {/* Menu Dropdown */}
         <Dropdown
           menu={{ items: menuItems }}
@@ -336,59 +296,8 @@ const DraggableDroppableProjectItem: React.FC<ProjectItemProps> = ({
         </Dropdown>
       </div>
 
-      {/* Conversations List */}
-      {isExpanded && (
-        <div
-          style={{
-            marginLeft: 32,
-            marginTop: 8,
-            marginBottom: 8,
-            animation: 'fadeIn 0.2s ease-in-out',
-          }}
-        >
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <Spin size="small" />
-            </div>
-          ) : project.conversations && project.conversations.length > 0 ? (
-            <div>
-              {project.conversations.map((conversation) => (
-                <DraggableProjectConversationItem
-                  key={conversation.id}
-                  conversation={conversation}
-                  isActive={currentConversationId === conversation.id}
-                  onClick={onConversationClick || (() => {})}
-                />
-              ))}
-            </div>
-          ) : (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '12px 0',
-                color: '#8c8c8c',
-                fontSize: 13,
-              }}
-            >
-              No conversations yet
-            </div>
-          )}
-        </div>
-      )}
-
       <style>
         {`
-          @keyframes fadeIn {
-            from {
-              opacity: 0;
-              transform: translateY(-4px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
           @keyframes pulse {
             0%, 100% {
               opacity: 1;

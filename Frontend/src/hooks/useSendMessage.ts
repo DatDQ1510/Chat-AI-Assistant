@@ -3,10 +3,11 @@ import { message } from 'antd';
 import { Socket } from 'socket.io-client';
 import conversationService from '../services/conversation.service';
 import { broadcastToTabs } from '../utils/tabSync';
-import type { Message, Conversation, ChatState, AttachedFile } from '../types/chat';
+import type { Message, Conversation, ChatState, AttachedFile, Files } from '../types/chat';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyConversation = any;
+
 
 interface MessagePaginationState {
   [conversationId: string]: {
@@ -21,7 +22,7 @@ interface MessagePayload {
   conversation_id: string;
   user_id?: string | null;
   content: string;
-  needs_suggestions?: boolean;
+  file_urls?: Files[];
 }
 
 interface UseSendMessageProps {
@@ -68,12 +69,17 @@ export const useSendMessage = ({
   ): Promise<{ success: boolean; error?: unknown }> => {
     return new Promise((resolve) => {
       let attempt = 0;
+      let timeoutId: ReturnType<typeof setTimeout>;
 
       const trySend = () => {
-        attempt++;        
+        attempt++;
+        
+        // Clear previous timeout
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
         if (!socketInstance.connected) {
-
-
           if (attempt <= maxRetries) {
             setTimeout(trySend, retryDelay);
             return;
@@ -88,19 +94,42 @@ export const useSendMessage = ({
           return resolve({ success: false, error: "No internet" });
         }
 
+        // Set global timeout for this attempt (including waiting for response)
+        timeoutId = setTimeout(() => {
+          if (attempt <= maxRetries) {
+            // Retry after timeout
+            setTimeout(trySend, retryDelay * attempt);
+          } else {
+            // Max retries reached, mark as error
+            setIsWaitingForAI(false);
+            setMessagesMap(prev => ({
+              ...prev,
+              [conversationId]: (prev[conversationId] || []).map(msg =>
+                msg.id === tempId
+                  ? { ...msg, status: 'error' as const, retryCount: attempt }
+                  : msg
+              )
+            }));
+            message.error('Request timeout. Please try again.');
+            resolve({ success: false, error: "Timeout" });
+          }
+        }, timeout + (retryDelay * attempt)); // Increase timeout for each retry
+
         socketInstance.timeout(timeout).emit("send_message", payload, (response: { success: boolean; error?: string; errorCode?: number }) => {
+          // Clear timeout since we got response
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+          
           if (response && !response.success) {
             const errorCode = response.errorCode || 500;
             const errorMsg = response.error || "Unknown error";
 
-            
             if (errorCode === 500 && attempt <= maxRetries) {
               setTimeout(trySend, retryDelay * attempt);
               return;
             }
-            
 
-            
             setIsWaitingForAI(false);
             
             setMessagesMap(prev => ({
@@ -119,7 +148,7 @@ export const useSendMessage = ({
             resolve({ success: false, error: response });
             return;
           }
-            resolve({ success: true });
+          resolve({ success: true });
         });
       };
 
@@ -128,7 +157,7 @@ export const useSendMessage = ({
   }, [setMessagesMap, setIsWaitingForAI]);
 
   // Send message
-  const handleSendMessage = useCallback(async (content: string, needsSuggestions = false, files?: AttachedFile[]) => {
+  const handleSendMessage = useCallback(async (content: string, files?: AttachedFile[]) => {
     if (!content.trim() && (!files || files.length === 0)) return;
     if (isLoading || isStreaming || !!operationLoading.type) return;
     if (!socket) return;
@@ -174,8 +203,11 @@ export const useSendMessage = ({
     }
 
     // ✅ Extract URLs from already uploaded files (no need to upload again)
-    const uploadedFileUrls: string[] = files
-      ? files.filter(f => f.url).map(f => f.url!)
+    const uploadedFileUrls: Files[] = files
+      ? files.filter(f => f.url).map(f => ({
+        url: f.url || null,
+        type: f.type,
+      }))
       : [];
 
 
@@ -189,7 +221,7 @@ export const useSendMessage = ({
       isTemp: true,
       status: 'sending' as const,
       retryCount: 0,
-      attachments: uploadedFileUrls.length > 0 ? uploadedFileUrls : undefined,
+      attachments: uploadedFileUrls.length > 0 ? uploadedFileUrls : null,
     };
 
     setMessagesMap(prev => ({
@@ -221,7 +253,6 @@ export const useSendMessage = ({
       conversation_id: conversationId,
       user_id: userId,
       content,
-      needs_suggestions: needsSuggestions,
       file_urls: uploadedFileUrls.length > 0 ? uploadedFileUrls : undefined,
     };
 

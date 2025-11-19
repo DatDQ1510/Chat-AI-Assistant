@@ -49,14 +49,27 @@ const getUserConversations = async ({
 	signal,
 }: PaginationParams = {}) => {
 	const response = await axiosClient.get<ApiResponse<PaginatedConversationsDto>>(
-		'v1/api/conversations',
+		'/v1/api/conversations',
 		{
 			params: { page, limit },
 			signal,
 		}
 	);
 
+	// Handle undefined or missing data
+	if (!response.data?.data) {
+		throw new Error('Invalid API response: missing data');
+	}
+
 	const { conversations, pagination } = response.data.data;
+
+	// Ensure conversations array exists
+	if (!conversations || !Array.isArray(conversations)) {
+		return {
+			conversations: [],
+			pagination: pagination || { total: 0, page: 1, totalPages: 0 }
+		};
+	}
 
 	return {
 		conversations: conversations.map(mapConversation),
@@ -66,20 +79,29 @@ const getUserConversations = async ({
 
 const getConversation = async (id: string | number) => {
 	const response = await axiosClient.get<ApiResponse<ConversationDto>>(
-		`v1/api/conversations/${id}`
+		`/v1/api/conversations/${id}`
 	);
+
+	// Handle undefined or missing data
+	if (!response.data?.data) {
+		throw new Error('Invalid API response: missing conversation data');
+	}
 
 	return mapConversation(response.data.data);
 };
 
 const createConversation = async (conversationName?: string, projectId?: string | null) => {
 	const response = await axiosClient.post<ApiResponse<ConversationDto>>(
-		'v1/api/conversations',
+		'/v1/api/conversations',
 		{ 
 			conversation_name: conversationName,
 			project_id: projectId || null
 		}
 	);
+
+	if (!response.data?.data) {
+		throw new Error('Invalid API response: missing conversation data');
+	}
 
 	return mapConversation(response.data.data);
 };

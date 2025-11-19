@@ -12,6 +12,7 @@ interface UseMessagesProps {
   socket: Socket | null;
   messagesMap: { [conversationId: string]: Message[] };
   setMessagesMap: React.Dispatch<React.SetStateAction<{ [conversationId: string]: Message[] }>>;
+  onSetSelectedText?: (text: string) => void; // ✅ Callback to set selected text in input
 }
 
 export const useMessages = ({
@@ -39,20 +40,14 @@ export const useMessages = ({
 
   // Load messages for current conversation
   useEffect(() => {
-    const loadMessagesForCurrentConversation = async () => {
+    const loadMessagesForCurrentConversation = async (signal: AbortSignal) => {
       if (!currentConversationId) return;
       
       if (isLoading) {
         return;
       }
       
-      // ✅ Remove check for conversation existence
-      // Project conversations may not be in the conversations list
-      // const conv = conversations.find(c => c.id === currentConversationId);
-      // if (!conv) {
-      //   return;
-      // }
-      
+      // ✅ Check if already loading/loaded to prevent double fetch
       if (loadedConversationsRef.current.has(currentConversationId)) {
         return;
       }
@@ -64,6 +59,11 @@ export const useMessages = ({
           currentConversationId,
           { page: 1, limit: 5 }
         );
+        
+        // ✅ Check if aborted (user navigated away)
+        if (signal.aborted) {
+          return;
+        }
                 
         const sortedMessages = [...messages].sort((a, b) => 
           a.timestamp.getTime() - b.timestamp.getTime()
@@ -86,6 +86,11 @@ export const useMessages = ({
           [currentConversationId]: paginationState,
         }));
       } catch (err) {
+        // ✅ Ignore errors if request was aborted
+        if (signal.aborted) {
+          return;
+        }
+        
         console.error('Failed to load messages for conversation:', err);
         setMessagePagination(prev => ({
           ...prev,
@@ -99,7 +104,15 @@ export const useMessages = ({
       }
     };
 
-    loadMessagesForCurrentConversation();
+    // ✅ Create AbortController for cleanup
+    const abortController = new AbortController();
+    
+    loadMessagesForCurrentConversation(abortController.signal);
+    
+    // ✅ Cleanup: abort fetch if conversation changes
+    return () => {
+      abortController.abort();
+    };
   }, [currentConversationId, isLoading, setMessagesMap]);
 
   // Load more messages

@@ -12,34 +12,82 @@ services:
       POSTGRES_DB: ${DB_NAME}
       TZ: Asia/Ho_Chi_Minh
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT}:5432" 
     volumes:
       - ./Database/init:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   redis:
     image: redis:7
-    container_name: localhost #redis_server
+    container_name: redis
     ports:
       - "${REDIS_PORT}:6379"
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   backend:
     build:
       context: ./Backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backend
     container_name: backend_app
-    restart: always
+    restart: unless-stopped
     depends_on:
-      - database
-      - redis
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - .env
+    environment:
+      # Override DB and Redis hosts for Docker networking
+      DB_HOST: database
+      REDIS_HOST: redis
+      NODE_ENV: production
     ports:
       - "${BACKEND_PORT}:5000"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile.backend
+    container_name: backend_worker
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DB_HOST: database
+      REDIS_HOST: redis
+      NODE_ENV: production
+    command: ["node", "dist/job/index.js"]
     networks:
       - app-network
 
@@ -48,12 +96,13 @@ services:
       context: ./Frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=  
+        # Empty để dùng relative path (nginx sẽ proxy)
+        - VITE_API_URL=
     container_name: frontend_app
+    restart: unless-stopped
     depends_on:
-      - backend
-    env_file:
-      - .env
+      backend:
+        condition: service_healthy
     ports:
       - "${FRONTEND_PORT}:80"
     networks:

@@ -129,7 +129,10 @@ export const useConversations = ({
       const conv = normalizeConversation(res);
       const newConvId = conv.id;
 
+      // First navigate to trigger UI update
       navigate(`/chat/${newConvId}`);
+      
+      // Then load conversations with the new one selected
       await loadConversations({ page: 1, append: false, selectConversationId: newConvId });
 
       broadcastToTabs({
@@ -139,6 +142,9 @@ export const useConversations = ({
 
       hide();
       message.success('New conversation created');
+      
+      // Add small delay before hiding loading to ensure smooth transition
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (err) {
       hide();
       console.error('Failed to create conversation:', err);
@@ -150,52 +156,39 @@ export const useConversations = ({
 
   // Select conversation
   const handleSelectConversation = useCallback(async (id: string) => {
-    // Always navigate to the conversation
+    // ✅ CRITICAL: Navigate first, this triggers URL change and all effects will sync
     navigate(`/chat/${id}`);
     
-    // Check if conversation exists
+    // ✅ Note: Do NOT update currentConversationId here!
+    // Let the ChatContainer useEffect handle it based on chatId from URL
+    // This prevents double state updates and race conditions
+    
+    // Check if conversation exists in list
     const exists = chatState.conversations.some(c => c.id === id);
     
     if (exists) {
-      // Conversation exists, just update currentConversationId
-      setChatState(prev => ({
-        ...prev,
-        currentConversationId: id,
-      }));
+      // Conversation already in list, navigation will handle the rest
       return;
     }
 
-    // Conversation doesn't exist, load it
-    setOperationLoading({ type: 'load', conversationId: id });
-    const hide = message.loading('Loading conversation...', 0);
-
+    // Conversation doesn't exist, load it in background
+    // (metadata only, messages will be loaded by useMessages hook)
     try {
       const res = await conversationService.getConversation(id);
       const conv = normalizeConversation(res);
 
       // Only add to conversations list if it's NOT a project conversation
-      if (conv.project_id) {
-        // Project conversation - only set as current, don't add to list
-        setChatState(prev => ({
-          ...prev,
-          currentConversationId: conv.id,
-        }));
-      } else {
-        // Regular conversation - add to list
+      if (!conv.project_id) {
         setChatState(prev => ({
           ...prev,
           conversations: [conv, ...prev.conversations],
-          currentConversationId: conv.id,
         }));
       }
-
-      hide();
+      // For project conversations, don't add to main list
+      // currentConversationId will be set by ChatContainer effect
     } catch (err) {
-      hide();
       console.error('Failed to load conversation:', err);
       message.error('Failed to load conversation');
-    } finally {
-      setOperationLoading({ type: null });
     }
   }, [chatState.conversations, normalizeConversation, navigate, setChatState]);
 

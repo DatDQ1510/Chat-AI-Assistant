@@ -151,6 +151,28 @@ export const useTabSync = ({
           }));
           break;
 
+        case 'suggestions_generated':
+          setMessagesMap(prev => ({
+            ...prev,
+            [payload.conversationId]: (prev[payload.conversationId] || []).map(m =>
+              m.id === payload.messageId 
+                ? { ...m, suggestions: payload.suggestions, loadingSuggestions: false } 
+                : m
+            ),
+          }));
+          break;
+
+        case 'suggestions_error':
+          setMessagesMap(prev => ({
+            ...prev,
+            [payload.conversationId]: (prev[payload.conversationId] || []).map(m =>
+              m.id === payload.messageId 
+                ? { ...m, loadingSuggestions: false } 
+                : m
+            ),
+          }));
+          break;
+
         case 'refresh_conversations':
           // ✅ Simple trigger - let each tab refresh independently
 

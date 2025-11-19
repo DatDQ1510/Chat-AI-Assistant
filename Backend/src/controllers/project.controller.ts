@@ -57,12 +57,28 @@ export const getConversationByProjectId = async (req: Request, res: Response, ne
         next(error);
     }
 };
+
 export const updateConversationProject = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { conversation_id } = req.params;
         const { project_id } = req.body;
         const updatedConversation = await conversationService.updateConversationProject(conversation_id, project_id);
         return res.status(200).json(successResponse(updatedConversation, "Conversation updated successfully"));
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getByProjectId = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { project_id } = req.params;
+        const base_project = await projectService.getProjectById(project_id);
+        if (!base_project) {
+            res.status(404).json({ message: "Project not found" });
+            return;
+        } else {
+            return res.status(200).json(successResponse(base_project, "Project fetched successfully"));
+        }
     } catch (error) {
         next(error);
     }

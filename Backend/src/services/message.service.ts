@@ -3,6 +3,7 @@ import { embeddingService } from "./embedding.service";
 // import { embeddingService } from "./embedding.service";
 import conversationService from "./conversation.service";
 import { summaryQueue } from "../queues/summary.queue";
+import  processUserMessage  from "../memory/processUserMessage";
 export class MessageService {
   /**
    * Create a message (user or chatbot)
@@ -18,12 +19,12 @@ export class MessageService {
 
     const count = await messageRepository.countMessagesByConversationId(conversation_id);
 
-    if (count > 0  && count % 10 === 0) {
-       await summaryQueue.add("auto-summary", { conversationId: conversation_id });
+    if (count + 1 > 0  && (count + 1) % 10 === 0) {
+      await summaryQueue.add("auto-summary", { conversationId: conversation_id });
     }
 
     const embedding = await embeddingService.generateEmbedding(content).catch((error) => {
-
+      console.error("Error generating embedding:", error);
       return null;
     });
 
@@ -38,6 +39,9 @@ export class MessageService {
       file_urls // ✅ Pass file_urls to repository
     );
 
+    // if(user_id && sender_type === "user") {
+    //   await processUserMessage(user_id, content);
+    // }
     // ✅ Auto-rename conversation if this is the first user message
     let autoRenamedTo: string | null | undefined = null;
     if (count === 0 && sender_type === "user") {

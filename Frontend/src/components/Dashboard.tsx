@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Card, Typography, Button, Space, Avatar } from 'antd';
-import { UserOutlined, LogoutOutlined, MessageOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, MessageOutlined, FolderOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 const { Header, Content } = Layout;
@@ -16,6 +16,10 @@ const Dashboard: React.FC = () => {
 
   const handleStartChat = () => {
     navigate('/chat');
+  };
+
+  const handleViewProjects = () => {
+    navigate('/chat'); // Projects are in chat sidebar
   };
 
   const headerStyle: React.CSSProperties = {
@@ -74,21 +78,30 @@ const Dashboard: React.FC = () => {
               </Button>
             </Card>
             
+            <Card title="Projects" hoverable>
+              <Text style={{ display: 'block', marginBottom: 12 }}>
+                Access your organized project workspaces
+              </Text>
+              
+              <Button 
+                type="primary"
+                block 
+                style={{ marginTop: '8px' }}
+                onClick={handleViewProjects}
+                icon={<FolderOutlined />}
+              >
+                View All Projects
+              </Button>
+            </Card>
+            
             <Card title="Settings" hoverable>
               <Text>Customize your chat experience and preferences.</Text>
               <br />
-              <Button type="link" style={{ marginTop: '16px' }} onClick={() => navigate('/settings')}>
+              <Button type="primary" style={{ marginTop: '16px' }} onClick={() => navigate('/settings')}>
                 View Settings
               </Button>
             </Card>
             
-            <Card title="History" hoverable>
-              <Text>Review your previous conversations and interactions.</Text>
-              <br />
-              <Button style={{ marginTop: '16px' }}>
-                View History
-              </Button>
-            </Card>
           </div>
         </div>
       </Content>

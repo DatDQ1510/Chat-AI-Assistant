@@ -244,7 +244,7 @@ export const useSocketEvents = ({
     });
 
     // Handle ai_stream_end
-    socket.on("ai_stream_end", ({ message_id, real_message_id, full_content, conversation_id, suggestions }) => {
+    socket.on("ai_stream_end", ({ message_id, real_message_id, full_content, conversation_id }) => {
 
       
       if (aiResponseTimeoutRef.current) {
@@ -269,7 +269,6 @@ export const useSocketEvents = ({
                   isStreaming: false, 
                   status: 'sent' as const,
                   isTemp: false,
-                  suggestions: suggestions || undefined // ✅ Store suggestions
                 }
               : m
           );
@@ -284,7 +283,6 @@ export const useSocketEvents = ({
                     isStreaming: false, 
                     status: 'sent' as const,
                     isTemp: false,
-                    suggestions: suggestions || undefined // ✅ Store suggestions
                   }
                 : m
             );
@@ -310,7 +308,6 @@ export const useSocketEvents = ({
           messageId: message_id,
           realMessageId: real_message_id || message_id,
           fullContent: full_content,
-          suggestions: suggestions // ✅ Broadcast suggestions to other tabs
         }
       });
 
@@ -430,14 +427,58 @@ export const useSocketEvents = ({
       }
     });
 
+    socket.on("suggestions_generated", ({ message_id, conversation_id, suggestions }) => {
+      console.log('📝 Suggestions received:', { message_id, suggestions });
+
+      setMessagesMap(prev => ({
+        ...prev,
+        [conversation_id]: prev[conversation_id]?.map(m =>
+          m.id === message_id
+            ? { ...m, suggestions, loadingSuggestions: false }
+            : m
+        ) || []
+      }));
+
+      broadcastToTabs({
+        type: 'suggestions_generated',
+        payload: { conversationId: conversation_id, messageId: message_id, suggestions }
+      });
+
+      antMessage.success(`✨ ${suggestions.length} follow-up questions generated!`);
+    });
+
+    // ✅ Handle suggestions error
+    socket.on("suggestions_error", ({ message_id, conversation_id, error }) => {
+      console.error('❌ Suggestions error:', { message_id, error });
+
+      setMessagesMap(prev => ({
+        ...prev,
+        [conversation_id]: prev[conversation_id]?.map(m =>
+          m.id === message_id
+            ? { ...m, loadingSuggestions: false }
+            : m
+        ) || []
+      }));
+
+      // Broadcast to other tabs
+      broadcastToTabs({
+        type: 'suggestions_error',
+        payload: { conversationId: conversation_id, messageId: message_id, error }
+      });
+
+      antMessage.error(`Failed to generate suggestions: ${error}`);
+    });
+
     return () => {
       socket.off("receive_message");
-      socket.off("user_message_saved"); // ✅ Cleanup new event
+      socket.off("user_message_saved");
       socket.off("ai_message_init");
       socket.off("ai_stream");
       socket.off("ai_stream_end");
       socket.off("ai_error");
-      socket.off("conversation_list_updated"); // ✅ Cleanup
+      socket.off("conversation_list_updated"); 
+      socket.off("suggestions_generated");
+      socket.off("suggestions_error");
       socket.off("disconnect");
       socket.off("connect");
       

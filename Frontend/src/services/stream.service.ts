@@ -10,7 +10,11 @@ interface StreamOptions {
 }
 
 class StreamService {
-  private readonly baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // In production (Docker), VITE_API_URL="" (empty string) for relative paths
+  // In development, VITE_API_URL=undefined, fallback to localhost:5000
+  private readonly baseURL = import.meta.env.VITE_API_URL !== undefined 
+    ? import.meta.env.VITE_API_URL 
+    : 'http://localhost:5000';
 
   /**
    * Stream chat response from backend
