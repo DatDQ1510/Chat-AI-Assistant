@@ -452,41 +452,42 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
         </div>
       )}
 
-      {/* Input Area */}
-      <div style={{ display: 'flex', gap: 15 }}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,video/*,application/pdf"
-          style={{ display: 'none' }}
-          onChange={handleFileSelect}
-        />
-        
+      {/* Input Area - All elements in one border container */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,video/*,application/pdf"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+      
+      <div style={{ 
+        display: 'flex', 
+        gap: 12, 
+        border: '1px solid #e5e7eb',
+        borderRadius: 12,
+        padding: '8px 12px',
+        background: '#fff',
+        alignItems: 'flex-end',
+      }}>
         <Button
-          icon={<PaperClipOutlined style={{ fontSize: 16 }}/>}
+          icon={<PaperClipOutlined style={{ fontSize: 18 }}/>}
           onClick={handleFileUpload}
           disabled={isLoading}
+          type="text"
           style={{
-            height: 44,
-            borderRadius: 8,
-            minWidth: 44,
-            border: attachedFiles.length > 0 ? '2px solid #0284c7' : '1px solid #e5e7eb',
-            color: attachedFiles.length > 0 ? '#0284c7' : undefined,
-            backgroundColor: attachedFiles.length > 0 ? '#f0f9ff' : 'transparent',
+            height: 40,
+            minWidth: 40,
+            color: attachedFiles.length > 0 ? '#0284c7' : '#6b7280',
           }}
         />
 
         <Button
-          icon={<BulbOutlined style={{ fontSize: 20 }} />}
+          icon={<BulbOutlined style={{ fontSize: 18 }} />}
           onClick={handleGenerateSuggestionsClick}
-          disabled={
-            isLoading //|| 
-            // !lastAIMessage || 
-            // lastAIMessage.status !== 'sent' || 
-            // lastAIMessage.loadingSuggestions ||
-            // !!lastAIMessage.suggestions // ✅ Already has suggestions
-          }
+          disabled={isLoading}
+          type="text"
           title={
             !lastAIMessage 
               ? "No AI message yet" 
@@ -497,12 +498,9 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
                   : "Generate follow-up questions"
           }
           style={{
-            height: 44,
-            borderRadius: 8,
-            minWidth: 44,
-            border: lastAIMessage?.loadingSuggestions ? '2px solid #f59e0b' : '1px solid #e5e7eb',
-            color: lastAIMessage?.loadingSuggestions ? '#eb4f11ff' : '#f59e0b',
-            backgroundColor: lastAIMessage?.loadingSuggestions ? '#fffbeb' : 'transparent',
+            height: 40,
+            minWidth: 40,
+            color: lastAIMessage?.loadingSuggestions ? '#f59e0b' : '#6b7280',
           }}
         />
 
@@ -511,14 +509,13 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
-          onPaste={handlePaste} // ✅ Handle paste for images
+          onPaste={handlePaste}
           placeholder={placeholder}
           autoSize={{ minRows: 1, maxRows: 6 }}
           disabled={isLoading}
+          bordered={false}
           style={{ 
-            borderRadius: 8, 
-            padding: '12px 16px',
-            border: '1px solid #e5e7eb',
+            padding: '8px 0',
             fontSize: 14,
             resize: 'none'
           }}
@@ -532,8 +529,8 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({
           loading={isLoading}
           style={{ 
             borderRadius: 8, 
-            height: 44,
-            minWidth: 44,
+            height: 40,
+            minWidth: 40,
             background: (inputValue.trim() || attachedFiles.length > 0) ? '#0284c7' : undefined,
             borderColor: (inputValue.trim() || attachedFiles.length > 0) ? '#0284c7' : undefined
           }}

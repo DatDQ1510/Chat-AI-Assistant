@@ -30,7 +30,11 @@ export const useSocketEvents = ({
 
     // Join conversation room
     if (currentConversationId) {
+      console.log(`🔌 Joining conversation room: ${currentConversationId}`);
       socket.emit("join_conversation", currentConversationId);
+      
+      // ✅ Show feedback to user
+      antMessage.info(`Switched to conversation`, 1);
     }
 
     // Handle receive_message

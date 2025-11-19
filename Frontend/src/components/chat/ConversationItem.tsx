@@ -64,9 +64,13 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         display: isCompact ? 'none' : 'flex',
       } as React.CSSProperties,
       title: {
-        fontWeight: 600, // ✅ Reduced from 750
-        fontSize: 16, // ✅ Reduced from 18
+        fontWeight: 600,
+        fontSize: 16,
         color: '#1f2937',
+        maxWidth: '180px', // ✅ Limit width to prevent overflow
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
       } as React.CSSProperties,
       date: {
         fontSize: 12, // ✅ Reduced from 16
@@ -131,7 +135,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         cursor: 'pointer',
         fontSize: 16,
       },
-      onClick: () => setIsRenaming(true),
+      onClick: (e) => {
+        e?.domEvent?.stopPropagation(); // ✅ Stop event propagation
+        setIsRenaming(true);
+      },
     },
     {
       key: 'tag',
@@ -141,7 +148,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         cursor: 'pointer',
         fontSize: 16,
       },
-      onClick: () => setIsTagModalVisible(true),
+      onClick: (e) => {
+        e?.domEvent?.stopPropagation(); // ✅ Stop event propagation
+        setIsTagModalVisible(true);
+      },
     },
     {
       key: 'delete',
@@ -152,7 +162,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         cursor: 'pointer',
         fontSize: 16,
       },
-      onClick: handleDelete,
+      onClick: (e) => {
+        e?.domEvent?.stopPropagation(); // ✅ Stop event propagation
+        handleDelete();
+      },
     },
   ];
 
@@ -226,13 +239,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           trigger={['click']}
           placement="bottomRight"
           arrow
+          overlayStyle={{ zIndex: 1050 }} // ✅ Ensure dropdown appears above other elements
         >
           <Button
             type="text"
             size="small"
             icon={<EllipsisOutlined />}
             style={styles.menuButton}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation(); // ✅ Prevent triggering conversation click
+            }}
           />
         </Dropdown>
       )}

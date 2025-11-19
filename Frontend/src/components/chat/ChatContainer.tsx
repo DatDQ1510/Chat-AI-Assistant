@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Typography, message, Spin, Button, Space } from 'antd';
+import { Typography, message, Spin, Button, Space, Skeleton } from 'antd';
 import { LoadingOutlined, StarFilled } from '@ant-design/icons';
 import ChatSidebar from './ChatSidebar';
 import type { ChatSidebarRef } from './ChatSidebar';
@@ -13,6 +13,7 @@ import SemanticChatDrawer from './SemanticChatDrawer';
 import SelectionPopover from './SelectionPopover'; // ✅ New component
 import DragAndDropProvider from './DragAndDropProvider'; // ✅ Drag & Drop
 import ConversationStarters from './ConversationStarters'; // ✅ NEW: Conversation starters
+import SettingsDrawer from './SettingsDrawer'; // ✅ NEW: Settings Drawer
 import type { Conversation, ChatState, Message } from '../../types/chat';
 import { useAuth } from '../../contexts/AuthContext';
 import conversationService from '../../services/conversation.service'; // ✅ Re-enabled for tag updates
@@ -195,6 +196,8 @@ const ChatContainer: React.FC = () => {
 
   const [importantDrawerVisible, setImportantDrawerVisible] = useState(false);
   
+  const [settingsDrawerVisible, setSettingsDrawerVisible] = useState(false); // ✅ NEW: Settings Drawer state
+  
   const [searchResultsCache, setSearchResultsCache] = useState<SearchResultsCache>({});
   
   const [lastSearchQuery, setLastSearchQuery] = useState('');
@@ -217,6 +220,10 @@ const ChatContainer: React.FC = () => {
 
   const handleCloseImportant = useCallback(() => {
     setImportantDrawerVisible(false);
+  }, []);
+
+  const handleCloseSettings = useCallback(() => {
+    setSettingsDrawerVisible(false);
   }, []);
 
   // Scroll to specific message
@@ -508,8 +515,8 @@ const ChatContainer: React.FC = () => {
   }, [location.state, chatState.currentConversationId, handleScrollToMessage]);
 
   const handleOpenSettings = useCallback(() => {
-    navigate('/settings');
-  }, [navigate]);
+    setSettingsDrawerVisible(true); // ✅ Open drawer instead of navigate
+  }, []);
 
   const handleLogout = useCallback(async () => {
     const hide = message.loading('Signing out…', 0);
@@ -778,14 +785,20 @@ const ChatContainer: React.FC = () => {
       {/* Chat Content Area */}
       <div style={styles.content}>
         <div style={{ ...styles.chatCard, position: 'relative' }}>
-          {/* ✅ Loading overlay for operations AND conversation transitions */}
-          {(finalOperationLoading.type || isTransitioning) && (
+          {/* ✅ Loading overlay for operations, show Skeleton for transitions */}
+          {finalOperationLoading.type && (
             <div style={styles.loadingOverlay}>
               <Spin
                 size="large"
                 indicator={<LoadingOutlined style={{ fontSize: 48, color: '#1890ff' }} spin />}
-                tip={isTransitioning ? "Loading conversation..." : undefined}
               />
+            </div>
+          )}
+
+          {isTransitioning && (
+            <div style={{ padding: '24px' }}>
+              <Skeleton active paragraph={{ rows: 8 }} />
+              <Skeleton.Input active size="large" block style={{ marginTop: 24 }} />
             </div>
           )}
 
@@ -845,8 +858,8 @@ const ChatContainer: React.FC = () => {
 
           <div style={styles.inputContainer}>
             
-            {/* ✅ Conversation Starters - shown above input when conversation has few/no messages */}
-            { chatState.currentConversationId && currentMessages.length <= 2 && (
+            {/* ✅ Conversation Starters - shown above input ONLY when no messages */}
+            { chatState.currentConversationId && currentMessages.length === 0 && (
               <ConversationStarters
                 socket={socket}
                 conversationId={chatState.currentConversationId}
@@ -886,6 +899,12 @@ const ChatContainer: React.FC = () => {
         conversationId={chatState.currentConversationId}
         onMessageClick={handleScrollToMessage}
         onToggleImportant={handleToggleImportant}
+      />
+
+      {/* ✅ Settings Drawer */}
+      <SettingsDrawer
+        visible={settingsDrawerVisible}
+        onClose={handleCloseSettings}
       />
 
       {/* ✅ Text Selection Popover - Ask AI about selected text (only in MessageList area) */}

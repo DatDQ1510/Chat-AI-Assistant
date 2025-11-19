@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Space, Spin } from 'antd';
+import { Card, Button, Space } from 'antd';
 import { BulbOutlined, SendOutlined } from '@ant-design/icons';
 import { Socket } from 'socket.io-client';
 
@@ -46,18 +46,9 @@ const ConversationStarters: React.FC<ConversationStartersProps> = ({
     };
   }, [socket, conversationId]);
 
-  // Don't show if no starters or if user is already chatting
+  // Don't show if no starters, loading, or if user is already chatting
   if (!starters.length || loading) {
-    return (
-      <div style={styles.container}>
-        {loading && (
-          <div style={styles.loadingContainer}>
-            <Spin size="small" />
-            <span style={styles.loadingText}>Đang tạo gợi ý...</span>
-          </div>
-        )}
-      </div>
-    );
+    return null; // ✅ Hide completely instead of showing loading spinner
   }
 
   return (

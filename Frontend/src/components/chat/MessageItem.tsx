@@ -318,7 +318,10 @@ const MessageItem: React.FC<MessageProps> = ({ message: msg, onCopy, onRetry, on
               type="text"
               size="small"
               icon={msg.important ? <StarFilled /> : <StarOutlined />}
-              onClick={() => onToggleImportant?.(msg.id, !msg.important)}
+              onClick={(e) => {
+                e.stopPropagation(); // ✅ Prevent event bubbling
+                onToggleImportant?.(msg.id, !msg.important);
+              }}
               style={{ 
                 color: msg.important ? '#f59e0b' : '#6b7280',
                 fontSize: 18

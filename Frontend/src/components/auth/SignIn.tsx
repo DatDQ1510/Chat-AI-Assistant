@@ -32,7 +32,7 @@ const SignIn: React.FC = () => {
         response.data.sessionId,
       );
 
-      navigate('/dashboard');
+      navigate('/chat');
       message.success('Welcome back! Signed in successfully.', 5);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {

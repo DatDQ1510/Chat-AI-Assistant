@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import conversationService from '../services/conversation.service';
@@ -120,8 +120,17 @@ export const useConversations = ({
     }
   }, [userId, normalizeConversation, setChatState, setConversationPagination]);
 
-  // Create new conversation
+  // ✅ Create new conversation with debounce to prevent duplicates
+  const creatingRef = useRef(false);
+  
   const handleNewConversation = useCallback(async () => {
+    // ✅ Prevent duplicate calls
+    if (creatingRef.current) {
+      console.log('⚠️ Conversation creation already in progress, skipping...');
+      return;
+    }
+    
+    creatingRef.current = true;
     setOperationLoading({ type: 'create' });
     const hide = message.loading('Creating conversation...', 0);
     try {
@@ -151,6 +160,7 @@ export const useConversations = ({
       message.error('Failed to create conversation');
     } finally {
       setOperationLoading({ type: null });
+      creatingRef.current = false; // ✅ Reset flag
     }
   }, [loadConversations, navigate, normalizeConversation]);
 

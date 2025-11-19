@@ -1,27 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeftOutlined, SettingTwoTone, SaveOutlined } from '@ant-design/icons';
-import { Typography, Form, Select, Button, Card, message, Spin, Input } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { userService } from '../services/user.service';
-import type { UserSettings } from '../services/user.service';
+import { SaveOutlined } from '@ant-design/icons';
+import { Typography, Form, Select, Button, Drawer, message, Spin, Input } from 'antd';
+import { userService } from '../../services/user.service';
+import type { UserSettings } from '../../services/user.service';
 
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
-const SettingsPage: React.FC = () => {
-  const navigate = useNavigate();
+interface SettingsDrawerProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ visible, onClose }) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<UserSettings | null>(null);
 
   const loadSettings = React.useCallback(async () => {
     try {
       setLoading(true);
-
       const data = await userService.getUserSettings();
-
       setSettings(data);
       form.setFieldsValue({
         language: data.language || 'en',
@@ -30,7 +31,6 @@ const SettingsPage: React.FC = () => {
         roleplay_mode: data.roleplay_mode || '',
       });
     } catch (error) {
-
       if (error instanceof Error) {
         message.error(`Failed to load settings: ${error.message}`);
       } else {
@@ -42,8 +42,10 @@ const SettingsPage: React.FC = () => {
   }, [form]);
 
   useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+    if (visible) {
+      loadSettings();
+    }
+  }, [visible, loadSettings]);
 
   const handleSave = async (values: { 
     language: string; 
@@ -53,18 +55,15 @@ const SettingsPage: React.FC = () => {
   }) => {
     try {
       setSaving(true);
-
       await userService.updateSettings({
         language: values.language,
         writing_style: values.writing_style,
         custom_instructions: values.custom_instructions || '',
         roleplay_mode: values.roleplay_mode || '',
       });
-
       message.success('Settings saved successfully!');
       setSettings(prev => prev ? { ...prev, ...values } : null);
     } catch (error) {
-
       if (error instanceof Error) {
         message.error(`Failed to save settings: ${error.message}`);
       } else {
@@ -75,46 +74,31 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        background: '#f5f5f5'
-      }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
-
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: '#f5f5f5',
-      padding: '24px 16px' // ✅ Reduced from 40px 20px
-    }}>
-      <div style={{ maxWidth: 700, margin: '0 auto' }}> {/* ✅ Reduced from 800px */}
-        <Button 
-          icon={<ArrowLeftOutlined />} 
-          onClick={() => navigate('/chat')}
-          style={{ marginBottom: 20 }} // ✅ Reduced from 24
-        >
-          Back to Chat
-        </Button>
-
-        <Card style={{ borderRadius: 12 }}> {/* ✅ Added borderRadius */}
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <SettingTwoTone 
-              twoToneColor="#0284c7" 
-              style={{ fontSize: 48, marginBottom: 16 }}
-            />
-            <Title level={2}>Settings</Title>
-            <Paragraph type="secondary">
-              Customize how the AI assistant responds to you
-            </Paragraph>
-          </div>
+    <Drawer
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 20 }}>⚙️</span>
+          <Title level={4} style={{ margin: 0 }}>Settings</Title>
+        </div>
+      }
+      placement="right"
+      width={500}
+      open={visible}
+      onClose={onClose}
+      styles={{
+        body: { paddingTop: 16 }
+      }}
+    >
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+          <Spin size="large" />
+        </div>
+      ) : (
+        <>
+          <Paragraph type="secondary" style={{ marginBottom: 24 }}>
+            Customize how the AI assistant responds to you
+          </Paragraph>
 
           <Form
             form={form}
@@ -221,10 +205,10 @@ const SettingsPage: React.FC = () => {
               </Paragraph>
             </div>
           )}
-        </Card>
-      </div>
-    </div>
+        </>
+      )}
+    </Drawer>
   );
 };
 
-export default SettingsPage;
+export default SettingsDrawer;
