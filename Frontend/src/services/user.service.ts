@@ -20,14 +20,14 @@ export interface UpdateSettingsDto {
 
 export const userService = {
   // Get current user settings
-  getSettings: async (): Promise<UserSettings> => {
-    const response = await apiClient.get('v1/api/users/settings');
+  getUserSettings: async (): Promise<UserSettings> => {
+    const response = await apiClient.get('/v1/api/users/settings');
     return response.data;
   },
 
   // Update user settings
   updateSettings: async (settings: UpdateSettingsDto): Promise<{ message: string; settings: Partial<UserSettings> }> => {
-    const response = await apiClient.patch('v1/api/users/settings', settings);
+    const response = await apiClient.patch('/v1/api/users/settings', settings);
     return response.data;
   },
 };

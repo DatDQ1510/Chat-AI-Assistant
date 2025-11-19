@@ -28,6 +28,34 @@ const startServer = async () => {
     server.listen(config.port, () => {
       console.log(`✅ Server is running on port ${config.port}`);
     });
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`\n${signal} received. Starting graceful shutdown...`);
+      
+      server.close(async () => {
+        console.log('✅ HTTP server closed');
+        
+        try {
+          await sequelize.close();
+          console.log('✅ Database connections closed');
+          process.exit(0);
+        } catch (error) {
+          console.error('❌ Error during shutdown:', error);
+          process.exit(1);
+        }
+      });
+
+      // Force shutdown after 10 seconds
+      setTimeout(() => {
+        console.error('❌ Forced shutdown due to timeout');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
   } catch (error : any) {
     console.error(`❌ Error starting server: ${error.message}`);
     process.exit(1);

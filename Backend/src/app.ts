@@ -15,13 +15,43 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
+
+// CORS configuration - allow multiple origins
+const allowedOrigins = [
+  'http://localhost:5173',     // Dev frontend
+  'http://localhost:80',        // Docker frontend
+  'http://localhost',           // Docker frontend without port
+  process.env.FRONTEND_URL,     // Production URL from env
+].filter(Boolean); // Remove undefined values
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, Postman, curl)
+      if (!origin) return callback(null, true);
+      
+      // In production with empty FRONTEND_URL, allow all origins
+      if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+        return callback(null, true);
+      }
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
+
 app.use(cookieParser());
+
+// Health check endpoint (before auth)
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 app.use("/v1/api/upload", uploadRoutes);
 // Public routes
 app.use("/v1/api/auth", authRoutes);

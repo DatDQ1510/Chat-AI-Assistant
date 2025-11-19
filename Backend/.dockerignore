@@ -4,12 +4,8 @@ node_modules
 # Build output (TypeScript compiled files)
 dist
 
-# Env files (tránh lộ thông tin nhạy cảm)
-.env
-# .env.local
-# .env.development
-# .env.production
-# .env.test
+# Env files (KHÔNG ignore - cần copy vào container)
+# .env
 
 # Logs
 *.log
@@ -28,4 +24,9 @@ Thumbs.db
 __tests__/
 *.spec.ts
 *.test.ts
-*.md
+
+# Docker files
+docker-compose.yml
+Dockerfile
+Dockerfile.backend
+.dockerignore

@@ -58,7 +58,7 @@ const getMessagesByConversation = async (
   { page = 1, limit = 10, signal }: PaginationParams = {}
 ) => {
   const response = await axiosClient.get<ApiResponse<PaginatedMessagesDto>>(
-    `v1/api/messages/${conversationId}`,
+    `/v1/api/messages/${conversationId}`,
     {
       params: { page, limit },
       signal,
@@ -93,7 +93,7 @@ const createMessage = async (
 	content: string
 ) => {
 	const response = await axiosClient.post<ApiResponse<MessageDto>>(
-		'v1/api/messages',
+		'/v1/api/messages',
 		{
 			conversation_id: conversationId,
 			content,
@@ -112,7 +112,7 @@ const getAIReply = async (
 	content: string
 ) => {
 	const response = await axiosClient.post<ApiResponse<MessageDto>>(
-		'v1/api/messages/reply',
+		'/v1/api/messages/reply',
 		{
 			conversation_id: conversationId,
 			content,
@@ -157,7 +157,7 @@ const semanticSearch = async (
 ) => {
 	try {
 		const response = await axiosClient.post<ApiResponse<SearchResultDto[]>>(
-			'v1/api/messages/search',
+			'/v1/api/messages/search',
 			{
 				query,
 				limit,
@@ -197,7 +197,7 @@ const semanticSearch = async (
 const toggleImportant = async (messageId: string, important: boolean) => {
 	try {
 		const response = await axiosClient.patch<ApiResponse<MessageDto>>(
-			`v1/api/messages/${messageId}/important`,
+			`/v1/api/messages/${messageId}/important`,
 			{ important }
 		);
 		return { success: true, data: response.data.data };
@@ -214,7 +214,7 @@ const toggleImportant = async (messageId: string, important: boolean) => {
 const getImportantMessages = async (conversationId: string): Promise<Message[]> => {
 	try {
 		const response = await axiosClient.get<ApiResponse<MessageDto[]>>(
-			`v1/api/messages/important/${conversationId}`
+			`/v1/api/messages/important/${conversationId}`
 		);
 		
 		const messages = response.data.data || [];

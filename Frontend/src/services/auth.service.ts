@@ -31,7 +31,7 @@ export const logout = async (
   sessionId: string
 ): Promise<ApiResponse<LogoutResponseData>> => {
   const response = await axiosClient.post<ApiResponse<LogoutResponseData>>(
-    'v1/api/auth/logout',
+    '/v1/api/auth/logout',
     { sessionId },
     { withCredentials: true }
   );
@@ -41,7 +41,7 @@ export const login = async (
   credentials: Pick<SignInFormData, 'email' | 'password'>
 ): Promise<ApiResponse<LoginResponseData>> => {
   const response = await axiosClient.post<ApiResponse<LoginResponseData>>(
-    'v1/api/auth/login',
+    '/v1/api/auth/login',
     {
       email: credentials.email,
       password: credentials.password,
@@ -55,7 +55,7 @@ export const register = async (
   payload: SignUpFormData
 ): Promise<ApiResponse<RegisterResponseData>> => {
   const response = await axiosClient.post<ApiResponse<RegisterResponseData>>(
-    'v1/api/auth/register',
+    '/v1/api/auth/register',
     {
       firstname: payload.firstName,
       lastname: payload.lastName,
@@ -70,7 +70,7 @@ export const refresh = async (
   sessionId: string
 ): Promise<ApiResponse<RefreshResponseData>> => {
   const response = await axiosClient.post<ApiResponse<RefreshResponseData>>(
-    'v1/api/auth/refresh',
+    '/v1/api/auth/refresh',
     { sessionId }
   );
   return response.data;

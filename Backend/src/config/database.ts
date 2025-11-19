@@ -30,16 +30,32 @@ export const sequelize = new Sequelize(
 );
 
 export const connectDB = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log("✅ Database connected successfully");
+  const maxRetries = 5;
+  let retries = 0;
+  
+  while (retries < maxRetries) {
+    try {
+      await sequelize.authenticate();
+      console.log("✅ Database connected successfully");
 
-    await sequelize.sync({
-      alter: true, // chỉ dùng khi dev — production nên bỏ
-    });
-    console.log("🧩 Models synchronized");
-  } catch (error) {
-    console.error("❌ Unable to connect to the database:", error);
-    process.exit(1);
+      await sequelize.sync({
+        alter: process.env.NODE_ENV !== "production", // Only alter in dev
+      });
+      console.log("🧩 Models synchronized");
+      return;
+    } catch (error) {
+      retries++;
+      console.error(`❌ Database connection attempt ${retries}/${maxRetries} failed:`, error);
+      
+      if (retries >= maxRetries) {
+        console.error("❌ Max retries reached. Exiting...");
+        process.exit(1);
+      }
+      
+      // Wait before retry (exponential backoff)
+      const waitTime = Math.min(1000 * Math.pow(2, retries), 10000);
+      console.log(`⏳ Retrying in ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
   }
 };

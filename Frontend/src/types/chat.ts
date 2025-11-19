@@ -86,9 +86,13 @@ export interface Project {
 
 export interface ProjectItemProps {
   project: Project;
+  isExpanded: boolean;
+  onToggle: (id: string) => void;
   isActive?: boolean;
   onClick?: () => void;
   onDelete?: (id: string) => void;
   onRename?: (id: string, newName: string) => void;
   onNewChat?: (projectId: string) => void;
+  onConversationClick?: (conversationId: string) => void;
+  currentConversationId?: string;
 }

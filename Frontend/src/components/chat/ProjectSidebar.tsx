@@ -27,6 +27,7 @@ export interface ProjectSidebarRef {
 const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
   ({ currentConversationId }, ref) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
@@ -99,6 +100,18 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
 
   const handleConversationClick = (conversationId: string) => {
     navigate(`/chat/${conversationId}`);
+  };
+
+  const handleToggleProject = (projectId: string) => {
+    setExpandedProjects((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
   };
 
   return (
@@ -239,6 +252,7 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
             }}>
               {projects.map((project) => {
                 const isActive = activeProjectId === project.id;
+                const isProjectExpanded = expandedProjects.has(project.id);
                 const conversations = project.conversations || [];
                 
                 return (
@@ -246,11 +260,15 @@ const ProjectSidebar = forwardRef<ProjectSidebarRef, ProjectSidebarProps>(
                     {/* Project Item */}
                     <DraggableDroppableProjectItem
                       project={project}
+                      isExpanded={isProjectExpanded}
+                      onToggle={handleToggleProject}
                       isActive={isActive}
                       onClick={() => selectProject(project.id)}
                       onDelete={deleteProject}
                       onRename={updateProject}
                       onNewChat={handleNewChat}
+                      onConversationClick={handleConversationClick}
+                      currentConversationId={currentConversationId || undefined}
                     />
                     
                     {/* Conversations - Render flat below project when active */}
