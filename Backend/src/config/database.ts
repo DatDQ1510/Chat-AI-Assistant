@@ -13,6 +13,14 @@ export const sequelize = new Sequelize(
     dialect: "postgres",
     timezone: "+07:00",
     logging: false,
+    
+    // SSL configuration for Render PostgreSQL
+    dialectOptions: process.env.NODE_ENV === "production" ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false // Render uses self-signed certs
+      }
+    } : {},
 
     define: {
       freezeTableName: true,  // ⚙️ Không tự đổi tên bảng

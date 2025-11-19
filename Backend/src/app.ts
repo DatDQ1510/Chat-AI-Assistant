@@ -21,8 +21,8 @@ const allowedOrigins = [
   'http://localhost:5173',     // Dev frontend
   'http://localhost:80',        // Docker frontend
   'http://localhost',           // Docker frontend without port
-  process.env.DOMAIN,           // Production domain from env
-  process.env.FRONTEND_URL,     // Production URL from env
+  process.env.DOMAIN,           // Production domain (Render backend URL)
+  process.env.FRONTEND_URL,     // Production frontend URL (if separate)
 ].filter(Boolean); // Remove undefined values
 
 app.use(
@@ -31,15 +31,16 @@ app.use(
       // Allow requests with no origin (like mobile apps, Postman, curl)
       if (!origin) return callback(null, true);
       
-      // In production with empty FRONTEND_URL, allow all origins
-      if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+      // Allow all origins in production if no specific FRONTEND_URL set
+      if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL && !process.env.DOMAIN) {
         return callback(null, true);
       }
       
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        console.warn(`❌ CORS blocked origin: ${origin}`);
+        callback(null, true); // Allow anyway in production for debugging
       }
     },
     credentials: true,

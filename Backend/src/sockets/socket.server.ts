@@ -15,9 +15,17 @@ export const createSocketServer = (httpServer: HTTPServer): Server => {
     return io;
   }
 
+  // CORS origins for Socket.IO
+  const socketOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    process.env.DOMAIN,           // Backend domain (same origin)
+    process.env.FRONTEND_URL,     // Frontend domain if separate
+  ].filter(Boolean);
+
   io = new Server(httpServer, {
     cors: { 
-      origin: ["http://localhost:5173", "http://localhost:5174"],
+      origin: socketOrigins,
       credentials: true
     },
     pingTimeout: 5000,
